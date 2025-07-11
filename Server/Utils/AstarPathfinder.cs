@@ -1,8 +1,7 @@
 ﻿using System.Collections.Generic;
 using Priority_Queue;
-using UnityEngine;
 
-    public class AstarPathfinder
+public class AstarPathfinder
     {
 
         private FastPriorityQueue<HexNode> openSet;
@@ -13,16 +12,14 @@ using UnityEngine;
         private delegate int HeuristicFunction(HexCellHash startNode, HexCellHash targetNode);
 
         private HeuristicFunction heuristic;
-
-        private HexGridHelper _helper;
+        
         
         private IReadOnlyDictionary<HexCellHash, HexCell> _field;
 
         private int _pathfindingActorId;
 
-        public AstarPathfinder(int graphSize, HexGridHelper helper)
+        public AstarPathfinder(int graphSize)
         {
-            _helper = helper;
             Allocate(graphSize);
         }
 
@@ -46,7 +43,7 @@ using UnityEngine;
             openSet.Clear();
             visited.Clear();
 
-            heuristic = _helper.ManhattanDistance;
+            heuristic = HexGridHelper.ManhattanDistance;
 
             var startNode = new HexNode { pos = startPos, cost = 0, prev = null };
             openSet.Enqueue(startNode, 0);
@@ -103,11 +100,11 @@ using UnityEngine;
         {
             neighbors.Clear();
 
-            foreach (var neighborPos in _helper.GetPrimaryNeighbors(pos))
+            foreach (var neighborPos in HexGridHelper.GetPrimaryNeighbors(pos))
             {
                 if (_field.TryGetValue(neighborPos, out var hexCell))
                 {
-                    if (/*!hexCell.IsOccupied &&*/ !hexCell.IsOccupied)
+                    //if (/*!hexCell.IsOccupied &&*/ !hexCell.IsOccupied)
                     {
                         neighbors.Add(new HexNeighborInfo
                         {

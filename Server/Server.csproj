@@ -23,4 +23,9 @@
     <ProjectReference Include="..\Main\Main.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="HexGridStuff" />
+    <Folder Include="Utils" />
+  </ItemGroup>
+
 </Project>
