@@ -1,4 +1,5 @@
-﻿using RestSharp;
+﻿using Newtonsoft.Json;
+using RestSharp;
 using Server.Net.Models;
 
 namespace Server.Net;
@@ -6,7 +7,7 @@ namespace Server.Net;
 internal class RestApi
 {
     
-    private const string _baseUrl = "https://jsonplaceholder.typicode.com/";
+    private const string _baseUrl = "https://games-test.datsteam.dev/";
     private readonly RestClient _client;
 
     public RestApi()
@@ -24,7 +25,7 @@ internal class RestApi
         Method method,
         IDictionary<string, string>? queryParams = null,
         IDictionary<string, string>? headers = null,
-        IDictionary<string, object>? bodyParams = null)
+        string? jsonPayload = null)
     {
         var request = new RestRequest(resource, method);
 
@@ -40,12 +41,12 @@ internal class RestApi
                 request.AddHeader(name, value);
         }
 
-        if (bodyParams != null &&
+        if (jsonPayload != null &&
             (method == Method.Post ||
              method == Method.Put ||
              method == Method.Patch))
         {
-            request.AddJsonBody(bodyParams);
+            request.AddStringBody(jsonPayload, DataFormat.Json);
         }
 
         var response = await _client.ExecuteAsync<T>(request);
@@ -60,9 +61,20 @@ internal class RestApi
         }
     }
 
-    public async Task<List<Post>> GetPostsAsync()
+    public async Task<GameState> GetGameStateAsync()
     {
-        return  await ExecuteAsync<List<Post>>("posts", Method.Get);       
+        return  await ExecuteAsync<GameState>("api/arena", Method.Get);       
+    } 
+    
+    public async Task<List<Message>> GetMessagesAsync()
+    {
+        return  await ExecuteAsync<List<Message>>("api/logs", Method.Get);       
+    }
+
+    public async Task<GameState> PostMoveAsync(MovesRequest movesRequest)
+    {
+        var json = JsonConvert.SerializeObject(movesRequest);
+        return await ExecuteAsync<GameState>("api/move", Method.Post, jsonPayload: json);
     }
 
 }

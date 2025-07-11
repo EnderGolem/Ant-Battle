@@ -8,7 +8,19 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Coordinate.cs" />
+    <Compile Remove="GameState.cs" />
+    <Compile Remove="Message.cs" />
+    <Compile Remove="MovesRequest.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageReference Include="RestSharp" Version="112.1.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Main\Main.csproj" />
   </ItemGroup>
 
 </Project>
