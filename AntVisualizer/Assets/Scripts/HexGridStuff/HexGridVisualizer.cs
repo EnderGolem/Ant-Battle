@@ -32,6 +32,7 @@ namespace Game.Scripts.CombatVisualization
 
             _combatField.GenerateCircularField(_helper, 5);
             InitVisualizeCombatField(_combatField);
+            SetPathRendering(new List<HexCellHash>{new HexCellHash(0,0), new HexCellHash(1,-1), new HexCellHash(2,-2)});
         }
 
         public void InitVisualizeCombatField(CombatField combatField)
