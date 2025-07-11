@@ -5,13 +5,13 @@ namespace Main.Models;
 public class LobbyInfo
 {
     [JsonProperty("lobbyEndsIn")]
-    public int LobbyEndsIn { get; set; }
+    public decimal LobbyEndsIn { get; set; }
 
     [JsonProperty("name")]
     public string Name { get; set; } = string.Empty;
 
     [JsonProperty("nextTurn")]
-    public int NextTurn { get; set; }
+    public decimal NextTurn { get; set; }
 
     [JsonProperty("realm")]
     public string Realm { get; set; } = string.Empty;

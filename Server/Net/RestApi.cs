@@ -1,10 +1,11 @@
-﻿using Newtonsoft.Json;
+﻿using Main.Models;
+using Newtonsoft.Json;
 using RestSharp;
 using Server.Net.Models;
 
 namespace Server.Net;
 
-internal class RestApi
+public class RestApi
 {
 
     private const string _baseUrl = "https://games-test.datsteam.dev/";
@@ -65,25 +66,46 @@ internal class RestApi
 
     public async Task<GameState> GetGameStateAsync()
     {
-        return await ExecuteAsync<GameState>("api/arena", Method.Get);
+        Dictionary<string, string> headers = new();
+        headers["X-Auth-Token"] = _token;
+
+        return await Try(ExecuteAsync<GameState>("api/arena", Method.Get, headers: headers));
     }
 
     public async Task<List<Message>> GetMessagesAsync()
     {
-        return await ExecuteAsync<List<Message>>("api/logs", Method.Get);
+        Dictionary<string, string> headers = new();
+        headers["X-Auth-Token"] = _token;
+
+        return await ExecuteAsync<List<Message>>("api/logs", Method.Get, headers: headers);
     }
 
     public async Task<GameState> PostMoveAsync(MovesRequest movesRequest)
     {
+        Dictionary<string, string> headers = new();
+        headers["X-Auth-Token"] = _token;
+
         var json = JsonConvert.SerializeObject(movesRequest);
-        return await ExecuteAsync<GameState>("api/move", Method.Post, jsonPayload: json);
+        return await ExecuteAsync<GameState>("api/move", Method.Post, jsonPayload: json, headers: headers);
     }
 
-    public async Task<GameState> PostRegisterAsync()
+    public async Task<LobbyInfo> PostRegisterAsync()
     {
         Dictionary<string, string> headers = new();
         headers["X-Auth-Token"] = _token;
-        return await ExecuteAsync<GameState>("api/register", Method.Post, headers: headers);
+        return await Try<LobbyInfo>(ExecuteAsync<LobbyInfo>("api/register", Method.Post, headers: headers));
     }
 
+    private async Task<T> Try<T>(Task<T> action)
+    {
+        try
+        {
+            return await action;
+        }
+        catch (Exception ex)
+        {
+            throw new Exception($"Ошибка при выполнении действия: {ex.Message}", ex);
+        }
+
+    }
 }
