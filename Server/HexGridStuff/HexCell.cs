@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using Server.Net.Models;
 
 public class HexCell
 {
@@ -68,6 +69,7 @@ public struct HexCellHash
     }
 
     public static HexCellHash operator +(HexCellHash a) => a;
+    
     public static HexCellHash operator -(HexCellHash a) => new HexCellHash(-a.q, -a.r);
 
     public static HexCellHash operator +(HexCellHash a, HexCellHash b)
@@ -79,6 +81,9 @@ public struct HexCellHash
     public static HexCellHash operator /(HexCellHash a, int b)
         => new HexCellHash(a.q/b, a.r/b);
     
+    public static HexCellHash operator *(HexCellHash cellHash, int multiplier) => 
+        new HexCellHash(cellHash.q*multiplier, cellHash.r * multiplier);
+    
     public static bool operator ==(HexCellHash a, HexCellHash b)
         => a.q == b.q && a.r == b.r;
 
@@ -87,6 +92,11 @@ public struct HexCellHash
     public override string ToString()
     {
         return $"({q},{r},{-q-r})";
+    }
+
+    public Coordinate ToCoordinate()
+    {
+        return new Coordinate { Q = q, R = r };
     }
     
 }
