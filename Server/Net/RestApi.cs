@@ -6,11 +6,12 @@ namespace Server.Net;
 
 internal class RestApi
 {
-    
+
     private const string _baseUrl = "https://games-test.datsteam.dev/";
+    private string _token = "";
     private readonly RestClient _client;
 
-    public RestApi()
+    public RestApi(string token = "")
     {
         var options = new RestClientOptions(_baseUrl)
         {
@@ -18,6 +19,7 @@ internal class RestApi
             Timeout = TimeSpan.FromMilliseconds(10000)
         };
         _client = new RestClient(options);
+        _token = token;
     }
 
     public async Task<T> ExecuteAsync<T>(
@@ -63,18 +65,23 @@ internal class RestApi
 
     public async Task<GameState> GetGameStateAsync()
     {
-        return  await ExecuteAsync<GameState>("api/arena", Method.Get);       
-    } 
-    
+        return await ExecuteAsync<GameState>("api/arena", Method.Get);
+    }
+
     public async Task<List<Message>> GetMessagesAsync()
     {
-        return  await ExecuteAsync<List<Message>>("api/logs", Method.Get);       
+        return await ExecuteAsync<List<Message>>("api/logs", Method.Get);
     }
 
     public async Task<GameState> PostMoveAsync(MovesRequest movesRequest)
     {
         var json = JsonConvert.SerializeObject(movesRequest);
         return await ExecuteAsync<GameState>("api/move", Method.Post, jsonPayload: json);
+    }
+
+    public async Task<GameState> PostRegisterAsync()
+    {
+        return await ExecuteAsync<GameState>("api/register", Method.Post, headers: _token);
     }
 
 }
