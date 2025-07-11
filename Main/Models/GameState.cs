@@ -63,7 +63,7 @@ public class Ant
     public int R { get; set; }
 
     [JsonProperty("type")]
-    public int Type { get; set; }
+    public AntRole Type { get; set; }
 }
 
 public class AntFood
@@ -93,7 +93,7 @@ public class Enemy
     public int R { get; set; }
 
     [JsonProperty("type")]
-    public int Type { get; set; }
+    public AntRole Type { get; set; } //Тут не уверен какой тип данных
 }
 
 public class FoodOnMap
@@ -108,7 +108,7 @@ public class FoodOnMap
     public int R { get; set; }
 
     [JsonProperty("type")]
-    public int Type { get; set; }
+    public FoodType Type { get; set; }
 }
 
 public class MapTile
@@ -123,6 +123,28 @@ public class MapTile
     public int R { get; set; }
 
     [JsonProperty("type")]
-    public int Type { get; set; }
+    public HexType Type { get; set; }
 }
 
+
+public enum HexType
+{
+    Anthill = 1,
+    Empty = 2,
+    Dirt = 3,
+    Acid = 4,
+    Rocks = 5
+}
+public enum FoodType
+{
+    Apple = 1,
+    Bread = 2,
+    Nectar = 3
+}
+
+public enum AntRole
+{
+    Worker = 0,
+    Fighter = 1,
+    Scout = 2
+}
