@@ -1,8 +1,10 @@
 ﻿
 using RestSharp;
 using Server;
+using Server.Socket;
 
-var manager = new Manager();
+var socketManager = new SocketManager();
+var manager = new Manager(socketManager);
 
 var taskCycle = Task.Run(async () =>
 {
@@ -32,6 +34,11 @@ var cliTask = Task.Run(() =>
         if (input.Equals("test", StringComparison.OrdinalIgnoreCase))
         {
             Console.WriteLine("TEST");
+        }
+        else if (input.Equals("stop", StringComparison.OrdinalIgnoreCase))
+        {
+            socketManager.Stop();
+            Environment.Exit(0);
         }
     }
 });
