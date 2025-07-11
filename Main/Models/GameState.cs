@@ -21,10 +21,10 @@ public class GameState : Base
     public IList<MapTile> Map { get; set; } = new List<MapTile>();
 
     [JsonProperty("nextTurnIn")]
-    public int NextTurnIn { get; set; }
+    public decimal NextTurnIn { get; set; }
 
     [JsonProperty("score")]
-    public int Score { get; set; }
+    public decimal Score { get; set; }
 
     [JsonProperty("spot")]
     public Coordinate Spot { get; set; } = new Coordinate();

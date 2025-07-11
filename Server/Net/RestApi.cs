@@ -81,7 +81,9 @@ internal class RestApi
 
     public async Task<GameState> PostRegisterAsync()
     {
-        return await ExecuteAsync<GameState>("api/register", Method.Post, headers: _token);
+        Dictionary<string, string> headers = new();
+        headers["X-Auth-Token"] = _token;
+        return await ExecuteAsync<GameState>("api/register", Method.Post, headers: headers);
     }
 
 }

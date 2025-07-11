@@ -12,7 +12,7 @@ internal class Manager
 
     public  async void Cycle()
     {
-      var posts =  await _api.GetPostsAsync();
+      //var posts =  await _api.GetPostsAsync();
     }
 
 }
