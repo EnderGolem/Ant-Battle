@@ -76,3 +76,7 @@ sysinfo.txt
 
 Server/bin
 Main/bin
+Server/obj
+Main/obj
+Server/.vs
+Main/.vs
