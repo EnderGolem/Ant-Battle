@@ -220,20 +220,36 @@ def screen_to_hex(pos):
     col = round((world_x - (row % 2) * BASE_HEX_WIDTH / 2) / BASE_HEX_WIDTH)
     return (int(col), int(row))
 
-def draw_ant(center, size, ant_type):
-    color = ANT_COLORS.get(ant_type, (255, 255, 255))
-    
+def draw_ant(center, size, ant_type, is_enemy):
+    fill_color = (255, 0, 0) if is_enemy else (64, 64, 255)  # Цвет тела
+    outline_color = (0, 0, 0)  # Чёрная окантовка
+
+    # Окантовка — рисуется чуть больше основного размера
+    outline_scale = 1.2
+
     if ant_type == ANT_TYPE_SCOUT:
+        # Контур
+        outline_points = [
+            (center[0], center[1] - size * outline_scale),
+            (center[0] - size * 0.8 * outline_scale, center[1] + size * 0.6 * outline_scale),
+            (center[0] + size * 0.8 * outline_scale, center[1] + size * 0.6 * outline_scale)
+        ]
+        pygame.draw.polygon(screen, outline_color, outline_points)
+        # Тело
         points = [
             (center[0], center[1] - size),
             (center[0] - size * 0.8, center[1] + size * 0.6),
             (center[0] + size * 0.8, center[1] + size * 0.6)
         ]
-        pygame.draw.polygon(screen, color, points)
+        pygame.draw.polygon(screen, fill_color, points)
+
     elif ant_type == ANT_TYPE_FIGHTER:
-        draw_hexagon(center, size * 0.7, color, color)
-    else:
-        pygame.draw.circle(screen, color, center, int(size * 0.8))
+        draw_hexagon(center, size * 0.7 * outline_scale, outline_color, outline_color)
+        draw_hexagon(center, size * 0.7, fill_color, fill_color)
+
+    else:  # worker
+        pygame.draw.circle(screen, outline_color, center, int(size * 0.8 * outline_scale))
+        pygame.draw.circle(screen, fill_color, center, int(size * 0.8))
 
 def draw_food(center, size, food_type, amount):
     image = None
@@ -314,13 +330,15 @@ def draw_game_state():
                  food['type'], food['amount'])
 
     # Рисуем муравьев
+    ants_by_hex = defaultdict(list)
     for ant in game_state.get('ants', []):
-        if ant.get('isEnemy'):
-            enemy_ants += 1
-        else:
-            my_ants += 1
+        ants_by_hex[(ant['q'], ant['r'])].append(ant)
 
-        q, r = ant['q'], ant['r']
+    # Теперь рисуем муравьев в каждой клетке с разным смещением
+    for (q, r), ants in ants_by_hex.items():
+        if not ants:
+            continue
+
         hex_x = q * BASE_HEX_WIDTH
         if r % 2 == 1:
             hex_x += BASE_HEX_WIDTH / 2
@@ -328,12 +346,37 @@ def draw_game_state():
 
         screen_x = WIDTH/2 + (hex_x - camera_x) * zoom_level
         screen_y = HEIGHT/2 + (hex_y - camera_y) * zoom_level
-        
-        draw_ant((screen_x, screen_y), BASE_HEX_SIZE * zoom_level * 0.8, ant['type'])
 
-        health_text = small_font.render(str(ant['health']), True, TEXT_COLOR)
-        screen.blit(health_text, (screen_x - 10, screen_y - 20))
+        num_ants = len(ants)
+        radius = BASE_HEX_SIZE * zoom_level * 0.5
 
+        # Позиции для максимум 3 юнитов (в равностороннем треугольнике)
+        positions = [
+            (0, -radius),
+            (-radius * math.cos(math.pi / 6), radius * math.sin(math.pi / 6)),
+            (radius * math.cos(math.pi / 6), radius * math.sin(math.pi / 6))
+        ]
+
+        for i, ant in enumerate(ants):
+            if i >= 3:
+                break  # максимум 3 юнита на гекс
+            offset_x, offset_y = positions[i]
+            cx = screen_x + offset_x
+            cy = screen_y + offset_y
+
+            isEnemy = ant.get("isEnemy")
+
+            draw_ant((cx, cy), BASE_HEX_SIZE * zoom_level * 0.4, ant['type'], ant.get('isEnemy', isEnemy))
+
+            # ХП над каждым
+            health_text = small_font.render(str(ant['health']), True, TEXT_COLOR)
+            screen.blit(health_text, (cx - 10, cy - 20))
+
+            if isEnemy:
+                enemy_ants += 1
+            else:
+                my_ants += 1
+                
     # Рисуем муравейник
     for home in game_state.get('home', []):
         q, r = home['q'], home['r']
@@ -345,7 +388,7 @@ def draw_game_state():
         screen_x = WIDTH/2 + (hex_x - camera_x) * zoom_level
         screen_y = HEIGHT/2 + (hex_y - camera_y) * zoom_level
         
-        pygame.draw.circle(screen, (255, 215, 0), (int(screen_x), int(screen_y)), 5)
+        pygame.draw.circle(screen, (255, 215, 0), (int(screen_x), int(screen_y)), int(5 * zoom_level))
 
     return {
         "turn": turn_number,
