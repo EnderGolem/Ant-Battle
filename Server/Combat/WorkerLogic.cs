@@ -154,13 +154,14 @@ public class WorkerLogic
     {
         var basePos = _combat.HomeCells[0];
         var random = new Random();
-        const int maxRadius = 15;
+        const int minRadius = 3;
+        const int maxRadius = 8;
         const int maxAttempts = 50;
         
         for (int attempt = 0; attempt < maxAttempts; attempt++)
         {
             // Генерируем случайную точку в радиусе до 10 от базы
-            int radius = random.Next(3, maxRadius + 1);
+            int radius = random.Next(minRadius, maxRadius + 1);
             var allCellsInRadius = HexGridHelper.GetAllCellsInRadius(basePos, radius);
             
             if (allCellsInRadius.Count > 0)
