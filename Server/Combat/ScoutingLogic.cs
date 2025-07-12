@@ -116,14 +116,14 @@ public class ScoutingLogic
             return -1000;
         }
 
-        var path = _pathfinder.Pathfind(_combat.MemorizedFields.Field, _combat.CellsOccupiedByAnts, antType,
+        /*var path = _pathfinder.Pathfind(_combat.MemorizedFields.Field, _combat.CellsOccupiedByAnts, antType,
             currentPosition,
             point);
 
         if (path == null || path.Count < 2)
         {
             return -1000;
-        }
+        }*/
 
         float cost = 0;
 

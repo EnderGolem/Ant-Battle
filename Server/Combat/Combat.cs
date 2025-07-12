@@ -52,6 +52,14 @@ public class Combat
             _strategizer = new Strategizer(this);
             _scoutingLogic = new ScoutingLogic(this);
             _workerLogic = new WorkerLogic(this);
+
+            foreach (var homeCell in _homeCells)
+            {
+                foreach (var hex in HexGridHelper.GetAllCellsInRadius(homeCell,6))
+                {
+                    _combatField.AddFakeCell(hex, Encyclopedia.CreateHexCellFromType(HexType.Fake));
+                }
+            }
         }
 
 
