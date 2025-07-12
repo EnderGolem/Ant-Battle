@@ -71,7 +71,7 @@ public class Combat
         _strategizer.Strategize();
         _workerLogic.AssignWorkerTasks();
 
-        _strategizer.PostStrategize();
+        //_strategizer.PostStrategize();
         _scoutingLogic.AssignScoutPoints();
 
 
