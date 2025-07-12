@@ -79,27 +79,6 @@ public class Combat
         moves.AddRange(_scoutingLogic.Scout());
         moves.AddRange(_workerLogic.GetWorkerMoves());
 
-        //List<Move> moves = new List<Move>();
-        //for (int i = 0; i < gameState.Ants.Count; i++)
-        //{
-        //    Move move = new Move();
-        //    move.Ant = gameState.Ants[i].Id;
-        //    var antPos = new HexCellHash(gameState.Ants[i].Q, gameState.Ants[i].R);
-        //    List<Coordinate> path = new List<Coordinate>(3);
-
-
-        //    for (int j = 0; j < 3; j++)
-        //    {
-        //        if (AntType.Scout == gameState.Ants[i].Type)
-        //            path.Add((antPos + HexCellHash.RightUp() * (j + 1)).ToCoordinate());
-        //        if (AntType.Worker == gameState.Ants[i].Type)
-        //            path.Add((antPos + HexCellHash.Left() * (j + 1)).ToCoordinate());
-        //        if (AntType.Warrior == gameState.Ants[i].Type)
-        //            path.Add((antPos + HexCellHash.LeftDown() * (j + 1)).ToCoordinate());
-        //    }
-        //    move.Path = path;
-        //    moves.Add(move);
-        //}
 
 
         input.Moves = moves;
