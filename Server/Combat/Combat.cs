@@ -65,7 +65,7 @@ public class Combat
 
         CheckingAnts(gameState);
 
-        CheckingFood(gameState);
+        //CheckingFood(gameState);
 
 
         _strategizer.Strategize();
