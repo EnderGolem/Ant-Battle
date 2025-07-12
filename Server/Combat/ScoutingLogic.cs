@@ -39,10 +39,14 @@ public class ScoutingLogic
         {
             if (!_scoutCommands.ContainsKey(scout.Key))
             {
-                float maxCost = int.MinValue;
+                float maxCost = float.MinValue;
                 HexCellHash bestPos = new HexCellHash();
                 foreach (var hex in _combat.MemorizedFields.Field)
                 {
+                    // Пропускаем точки, которые уже назначены другим разведчикам
+                    if (_pointsToScout.Contains(hex.Key))
+                        continue;
+                        
                     var cost = EstimateCostForPoint(hex.Key, hex.Value, 
                         HexCellHash.FromCoordinate(new Coordinate{Q = scout.Value.Q, R = scout.Value.R}), scout.Value.Type);
                     if (cost > maxCost)
@@ -52,7 +56,7 @@ public class ScoutingLogic
                     }
                 }
 
-                if (maxCost > int.MinValue)
+                if (maxCost > float.MinValue)
                 {
                     _pointsToScout.Add(bestPos);
                     _scoutCommands.Add(scout.Key, bestPos);
@@ -127,28 +131,37 @@ public class ScoutingLogic
 
         float cost = 0;
 
-        var homeDistCoef = 2;
+        // Базовый приоритет для неизученных клеток
+        cost += 1000;
+
+        // Штраф за расстояние от дома - чем дальше, тем хуже
+        var homeDistCoef = 3;
         if (antType == AntType.Worker)
         {
-            homeDistCoef = 6;
+            homeDistCoef = 8; // Рабочие должны держаться ближе к дому
         }
-
         cost -= HexGridHelper.ManhattanDistance(_combat.HomeCells[0], point) * homeDistCoef;
-        cost -= HexGridHelper.ManhattanDistance(currentPosition, point) * 2;
 
-        int maxDistToOtherPoints = int.MinValue;
+        // Штраф за расстояние от текущей позиции - предпочитаем ближние цели
+        cost -= HexGridHelper.ManhattanDistance(currentPosition, point) * 5;
 
-        foreach (var hash in _pointsToScout)
+        // Бонус за распределение разведчиков - поощряем разнообразие целей
+        int minDistToOtherPoints = int.MaxValue;
+        if (_pointsToScout.Count > 0)
         {
-            var dist = HexGridHelper.ManhattanDistance(hash, point);
-            if (dist > maxDistToOtherPoints)
+            foreach (var hash in _pointsToScout)
             {
-                maxDistToOtherPoints = dist;
+                var dist = HexGridHelper.ManhattanDistance(hash, point);
+                if (dist < minDistToOtherPoints)
+                {
+                    minDistToOtherPoints = dist;
+                }
             }
+            // Поощряем точки, которые далеко от уже назначенных целей
+            cost += minDistToOtherPoints * 2;
         }
 
-        cost += maxDistToOtherPoints * 6;
-
+        // Бонус за количество неизученных клеток рядом
         int closeUndiscoveredPoints = 0;
         foreach (var nearPoint in HexGridHelper.GetAllCellsInRadius(point,3))
         {
@@ -165,7 +178,7 @@ public class ScoutingLogic
             }
         }
 
-        cost += closeUndiscoveredPoints * 2;
+        cost += closeUndiscoveredPoints * 3; // Увеличили коэффициент для приоритета областей с много неизученного
 
         return cost;
     }
