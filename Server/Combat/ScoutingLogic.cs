@@ -161,11 +161,11 @@ public class ScoutingLogic
             }
             else
             {
-                closeUndiscoveredPoints += closeUndiscoveredPoints;
+                closeUndiscoveredPoints += 1;
             }
         }
 
-        cost += closeUndiscoveredPoints;
+        cost += closeUndiscoveredPoints * 2;
 
         return cost;
     }
