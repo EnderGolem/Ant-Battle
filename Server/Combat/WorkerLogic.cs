@@ -120,6 +120,13 @@ public class WorkerLogic
             _workerStates[workerId] = WorkerState.MovingToFood;
             _workerTargets[workerId] = HexCellHash.FromCoordinate(new Coordinate(){Q = nearestFood.Q, R = nearestFood.R});
         }
+
+        //ЗАГЛУШКА возможно стоит заменить
+        if(nearestFood == null)
+        {
+            _workerStates[workerId] = WorkerState.SearchingFood;
+            _workerTargets[workerId] = currentPos + HexCellHash.RightUp();
+        }
     }
 
     public List<Move> GetWorkerMoves()
@@ -179,5 +186,5 @@ public enum WorkerState
     SearchingFood,
     MovingToFood,
     CollectingFood,
-    ReturningHome
+    ReturningHome,
 }
