@@ -82,7 +82,7 @@ FOOD_NECTAR = 3
 # Цвета
 
 HEX_COLORS = {
-    HEX_HOME: (139, 69, 19),
+    HEX_HOME: (255, 105, 180),
     HEX_EMPTY: (34, 139, 34),
     HEX_DIRT: (101, 67, 33),
     HEX_ACID: (0, 100, 0),
@@ -290,14 +290,13 @@ def get_hex_position(q, r):
     screen_y = HEIGHT/2 + (y - camera_y) * zoom_level
     return (screen_x, screen_y)
 
-def draw_ant(center, size, ant_type, is_enemy):
+def draw_ant(center, size, ant_type, is_enemy, food=None):
     fill_color = (255, 0, 0) if is_enemy else (64, 64, 255)  # Цвет тела
     outline_color = (0, 0, 0)  # Чёрная окантовка
 
     # Окантовка — рисуется чуть больше основного размера
     outline_scale = 1.2
     
-
     if ant_type == ANT_TYPE_SCOUT:
         # Контур
         outline_points = [
@@ -322,6 +321,16 @@ def draw_ant(center, size, ant_type, is_enemy):
         pygame.draw.circle(screen, outline_color, center, int(size * 0.8 * outline_scale))
         pygame.draw.circle(screen, fill_color, center, int(size * 0.8))
 
+    # Рисуем еду, если муравей её несёт
+    if food and food.get('amount', 0) > 0:
+        food_size = size
+        food_pos = (center[0], center[1])  # Над муравьём
+        
+        # Создаём поверхность для еды
+        food_surface = pygame.Surface((food_size * 2, food_size * 2), pygame.SRCALPHA)
+        draw_food(food_surface, (food_size, food_size), food_size, food['type'], food['amount'])
+        screen.blit(food_surface, (food_pos[0] - food_size, food_pos[1] - food_size))
+
 def draw_food(surface, center, size, food_type, amount):
     image = None
     if food_type == FOOD_APPLE:
@@ -344,8 +353,8 @@ def draw_food(surface, center, size, food_type, amount):
 
     # Отображаем количество
     if zoom_level > 0.3:
-        amount_text = small_font.render(str(amount), True, TEXT_FOOD)
-        surface.blit(amount_text, (center[0] - 5, center[1] + size * 0.7))
+        amount_text = font.render(str(amount), True, TEXT_FOOD)
+        surface.blit(amount_text, (center[0] - 5, center[1]))
 
 def draw_star(center, size, color):
     points = []
@@ -542,7 +551,8 @@ def draw_game_state():
                     # Нарисовать стрелку
                     draw_arrow(screen, start_pos, end_pos, color=(200, 200, 255), width=2)
 
-            draw_ant((cx, cy), BASE_HEX_SIZE * zoom_level * 0.4, ant['type'], is_enemy)
+            ant_food = ant.get('food')
+            draw_ant((cx, cy), BASE_HEX_SIZE * zoom_level * 0.4, ant['type'], is_enemy, ant_food)
 
             # ХП над каждым
             if zoom_level > 0.5:
