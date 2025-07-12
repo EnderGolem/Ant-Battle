@@ -51,7 +51,7 @@ public struct HexCellHash
 
     public static HexCellHash LeftDown()
     {
-        return new HexCellHash(0, -1);
+        return new HexCellHash(1, 0);
     }
     
     public static HexCellHash Left()
@@ -61,12 +61,12 @@ public struct HexCellHash
     
     public static HexCellHash LeftUp()
     {
-        return new HexCellHash(-1, 1);
+        return new HexCellHash(1, -1);
     }
     
     public static HexCellHash RightDown()
     {
-        return new HexCellHash(1, -1);
+        return new HexCellHash(1, 1);
     }
     
     public static HexCellHash Right()
@@ -76,7 +76,7 @@ public struct HexCellHash
     
     public static HexCellHash RightUp()
     {
-        return new HexCellHash(0, 1);
+        return new HexCellHash(1, -1);
     }
 
     public static HexCellHash IncorrectValue()

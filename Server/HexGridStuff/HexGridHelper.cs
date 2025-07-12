@@ -8,7 +8,7 @@ public static class HexGridHelper
    private static HexCellHash[] _directions = new[]
    {
       new HexCellHash(1,0), new HexCellHash(1,-1), new HexCellHash(0,-1),
-      new HexCellHash(-1,0), new HexCellHash(-1, 1), new HexCellHash(0, 1)
+      new HexCellHash(-1,0), new HexCellHash(1, 1), new HexCellHash(0, 1)
    };
 
    private static HexCellHash[] _diagonals = new[]
