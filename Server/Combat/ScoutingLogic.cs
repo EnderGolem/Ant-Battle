@@ -127,10 +127,10 @@ public class ScoutingLogic
 
         float cost = 0;
 
-        var homeDistCoef = 1;
+        var homeDistCoef = 2;
         if (antType == AntType.Worker)
         {
-            homeDistCoef = 3;
+            homeDistCoef = 6;
         }
 
         cost -= HexGridHelper.ManhattanDistance(_combat.HomeCells[0], point) * homeDistCoef;
@@ -147,7 +147,7 @@ public class ScoutingLogic
             }
         }
 
-        cost += maxDistToOtherPoints * 3;
+        cost += maxDistToOtherPoints * 6;
 
         int closeUndiscoveredPoints = 0;
         foreach (var nearPoint in HexGridHelper.GetAllCellsInRadius(point,3))
