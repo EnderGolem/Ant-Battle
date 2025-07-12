@@ -35,6 +35,7 @@ internal class Manager
         
             // Отправляем JSON данные игры через WebSocket
             _socketManager.BroadcastGameState(jsonGameState);
+            
         }
         catch (Exception ex)
         {

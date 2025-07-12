@@ -2,18 +2,34 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using Server.Combat;
 using Server.Net.Models;
 
 public class HexCell
 {
-    private int _cost;
+    private byte _cost;
 
-    public HexCell(int cost)
+    private HexType _type;
+
+    private bool _passable;
+
+    public HexCell(HexType type, byte cost, bool passable)
     {
-        
+        _type = type;
+        _cost = cost;
+        _passable = passable;
     }
 
-    public int Cost => _cost;
+    public void SetType(HexType type)
+    {
+        _type = type;
+    }
+
+    public byte Cost => _cost;
+
+    public HexType Type => _type;
+
+    public bool Passable => _passable;
 }
 
 [Serializable]
@@ -98,5 +114,10 @@ public struct HexCellHash
     {
         return new Coordinate { Q = q, R = r };
     }
-    
+
+    public static HexCellHash FromCoordinate(Coordinate coordinate)
+    {
+        return new HexCellHash(coordinate.Q, coordinate.R);
+    }
+
 }

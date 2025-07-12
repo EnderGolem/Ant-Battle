@@ -4,8 +4,20 @@ public class CombatField
 {
     private Dictionary<HexCellHash, HexCell> _combatField = new Dictionary<HexCellHash, HexCell>();
 
-    public void AddHexCell(HexCellHash hash, HexCell cell)
+    public Dictionary<HexCellHash, HexCell> Field => _combatField;
+
+    public void SetHexCell(HexCellHash hash, HexCell cell)
     {
-        _combatField.Add(hash,cell);
+        _combatField[hash] = cell;
+    }
+
+    public void AddFakeCell(HexCellHash hash, HexCell cell)
+    {
+        if (_combatField.ContainsKey(hash))
+        {
+            return;
+        }
+
+        _combatField[hash] = cell;
     }
 }
