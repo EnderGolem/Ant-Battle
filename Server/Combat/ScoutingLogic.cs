@@ -44,7 +44,7 @@ public class ScoutingLogic
                 foreach (var hex in _combat.MemorizedFields.Field)
                 {
                     var cost = EstimateCostForPoint(hex.Key, hex.Value, 
-                        HexCellHash.FromCoordinate(new Coordinate{Q = scout.Value.Q, R = scout.Value.R}),scout.Value.Type);
+                        HexCellHash.FromCoordinate(new Coordinate{Q = scout.Value.Q, R = scout.Value.R}), scout.Value.Type);
                     if (cost > maxCost)
                     {
                         maxCost = cost;
@@ -147,7 +147,7 @@ public class ScoutingLogic
             }
         }
 
-        cost += maxDistToOtherPoints;
+        cost += maxDistToOtherPoints * 3;
 
         int closeUndiscoveredPoints = 0;
         foreach (var nearPoint in HexGridHelper.GetAllCellsInRadius(point,3))
