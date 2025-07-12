@@ -136,6 +136,7 @@ public class WorkerLogic
         // Если еды нет, выбираем случайную точку в радиусе до 10 от базы
         if (nearestFood == null)
         {
+            Console.WriteLine($"Nearest food: {nearestFood}"); 
             var randomTarget = FindRandomPointNearBase();
             if (randomTarget != null)
             {

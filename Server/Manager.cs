@@ -37,7 +37,13 @@ internal class Manager
 
 
             var input = _combat.Tick(game);
-            Console.WriteLine($"Moves {JsonConvert.SerializeObject(input)} ");
+
+            var json = JsonConvert.SerializeObject(input);
+            string truncated = json.Length <= 20
+                ? json
+                : json.Substring(0, 20);
+
+            Console.WriteLine($"Moves {JsonConvert.SerializeObject(truncated)} ");
 
             var resultMove = await _api.PostMoveAsync(input);
 
