@@ -70,7 +70,7 @@ public class AstarPathfinder
                     }
                 }
 
-                var neighbors = GetNeighbors(cur.pos);
+                var neighbors = GetNeighborsHex(cur.pos);
                 foreach (var neighbor in neighbors)
                 {
                     if (visited.TryGetValue(neighbor.neighbor, out HexNode n))
@@ -96,11 +96,11 @@ public class AstarPathfinder
             return null;
         }
 
-        List<HexNeighborInfo> GetNeighbors(HexCellHash pos)
+        List<HexNeighborInfo> GetNeighborsHex(HexCellHash pos)
         {
             neighbors.Clear();
 
-            foreach (var neighborPos in HexGridHelper.GetPrimaryNeighbors(pos))
+            foreach (var neighborPos in HexGridHelper.GetPrimaryNeighborsHex(pos))
             {
                 if (_field.TryGetValue(neighborPos, out var hexCell))
                 {

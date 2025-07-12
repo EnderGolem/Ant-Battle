@@ -34,7 +34,7 @@ public static class HexGridHelper
       return _diagonals;
    }
 
-   public static HexCellHash[] GetPrimaryNeighbors(HexCellHash cell)
+   public static HexCellHash[] GetPrimaryNeighborsHex(HexCellHash cell)
    {
       var neighbors = new HexCellHash[GetPrimaryDirections().Length];
 
