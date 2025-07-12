@@ -110,21 +110,27 @@ public class Combat
 
     private void CheckingFood(GameState gameState)
     {
-        foreach (var food in gameState.Food)
+        var mapHashes = new HashSet<HexCellHash>(
+            gameState.Map.Select(c => HexCellHash.FromCoordinate(new Coordinate(c.Q, c.R))));
+        var foodHashes = new HashSet<HexCellHash>();
+
+        // Добавляем/обновляем еду + наполняем foodHashes
+        foreach (var f in gameState.Food)
         {
-            var hash = HexCellHash.FromCoordinate(new Coordinate() { Q = food.Q, R = food.R });
-            _combatField.AddFood(hash, food);
+            var hash = HexCellHash.FromCoordinate(new Coordinate(f.Q, f.R));
+            _combatField.AddFood(hash, f);
+            foodHashes.Add(hash);
         }
 
-        var mapsInHexCell = gameState.Map.Select(x => HexCellHash.FromCoordinate(new Coordinate(x.Q, x.R))).ToList();
-        var foodsInHexCell = gameState.Food.Select(x => HexCellHash.FromCoordinate(new Coordinate(x.Q, x.R))).ToList();
-        foreach (var food in _combatField.Field)
-        {
-            if (mapsInHexCell.Contains(food.Key) && !foodsInHexCell.Contains(food.Key))            
-                _combatField.Remove(food.Key);
-            
-        }
+        // Удаляем устаревшие записи
+        var keysToRemove = _combatField.Field.Keys
+            .Where(k => mapHashes.Contains(k) && !foodHashes.Contains(k))
+            .ToList();
+
+        foreach (var key in keysToRemove)
+            _combatField.Remove(key);
     }
+
 
     private void CheckingAnts(GameState gameState)
     {

@@ -119,7 +119,8 @@ public class ScoutingLogic
         var path = _pathfinder.Pathfind(_combat.MemorizedFields.Field, _combat.CellsOccupiedByAnts, antType,
             currentPosition,
             point);
-        if (path == null && path.Count < 2)
+
+        if (path == null || path.Count < 2)
         {
             return -1000;
         }
