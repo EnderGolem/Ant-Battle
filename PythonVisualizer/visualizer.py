@@ -108,6 +108,12 @@ def on_message(ws, message):
     global game_state
     try:
         game_state = json.loads(message)
+        turn = game_state.get('turnNo', 0)
+        if (turn == 0):
+            discovered_hexes.clear()
+            discovered_food.clear()
+        if (turn == 1):
+            center_on_home()
     except json.JSONDecodeError as e:
         print(f"[WebSocket] Error decoding message: {e}")
 
@@ -224,6 +230,7 @@ def draw_ant(center, size, ant_type, is_enemy):
 
     # Окантовка — рисуется чуть больше основного размера
     outline_scale = 1.2
+    
 
     if ant_type == ANT_TYPE_SCOUT:
         # Контур
@@ -249,7 +256,7 @@ def draw_ant(center, size, ant_type, is_enemy):
         pygame.draw.circle(screen, outline_color, center, int(size * 0.8 * outline_scale))
         pygame.draw.circle(screen, fill_color, center, int(size * 0.8))
 
-def draw_food(center, size, food_type, amount):
+def draw_food(surface, center, size, food_type, amount):
     image = None
     if food_type == FOOD_APPLE:
         image = texture_apple
@@ -263,15 +270,15 @@ def draw_food(center, size, food_type, amount):
         scaled_size = int(size * 1.1)
         image = pygame.transform.smoothscale(image, (scaled_size, scaled_size))
         rect = image.get_rect(center=center)
-        screen.blit(image, rect)
+        surface.blit(image, rect)
     else:
         # Фоллбэк — цветная фигура
         color = FOOD_COLORS.get(food_type, (255, 255, 255))
-        pygame.draw.circle(screen, color, center, int(size * 0.6))
+        pygame.draw.circle(surface, color, center, int(size * 0.6))
 
     # Отображаем количество
     amount_text = small_font.render(str(amount), True, TEXT_COLOR)
-    screen.blit(amount_text, (center[0] - 5, center[1] + size * 0.7))
+    surface.blit(amount_text, (center[0] - 5, center[1] + size * 0.7))
 
 def draw_star(center, size, color):
     points = []
@@ -283,6 +290,43 @@ def draw_star(center, size, color):
         points.append((center[0] + math.cos(inner_angle) * size * 0.4, 
                       center[1] - math.sin(inner_angle) * size * 0.4))
     pygame.draw.polygon(screen, color, points)
+
+def draw_arrow(surface, start, end, color=(255, 255, 255), width=2, head_size=8, shrink=4):
+    """
+    Рисует стрелку от start к end, с усечением на длину `shrink` с обоих сторон.
+    """
+    dx = end[0] - start[0]
+    dy = end[1] - start[1]
+    distance = math.hypot(dx, dy)
+
+    if distance == 0:
+        return  # ничего не рисуем, если длина 0
+
+    # Направление вектора
+    unit_dx = dx / distance
+    unit_dy = dy / distance
+
+    # Сдвигаем начало и конец внутрь отрезка
+    new_start = (
+        start[0] + unit_dx * shrink,
+        start[1] + unit_dy * shrink
+    )
+    new_end = (
+        end[0] - unit_dx * shrink,
+        end[1] - unit_dy * shrink
+    )
+
+    # Основная линия стрелки
+    pygame.draw.line(surface, color, new_start, new_end, width)
+
+    # Наконечник (треугольник)
+    angle = math.atan2(new_end[1] - new_start[1], new_end[0] - new_start[0])
+    x1 = new_end[0] - head_size * math.cos(angle - math.pi / 6)
+    y1 = new_end[1] - head_size * math.sin(angle - math.pi / 6)
+    x2 = new_end[0] - head_size * math.cos(angle + math.pi / 6)
+    y2 = new_end[1] - head_size * math.sin(angle + math.pi / 6)
+
+    pygame.draw.polygon(surface, color, [new_end, (x1, y1), (x2, y2)])
 
 def draw_game_state():
     if not game_state:
@@ -366,13 +410,13 @@ def draw_game_state():
         # Полупрозрачность для скрытой еды
         visible = (q, r) in visible_coords
         if visible:
-            draw_food((screen_x, screen_y), BASE_HEX_SIZE * zoom_level, food['type'], food['amount'])
+            draw_food(screen, (screen_x, screen_y), BASE_HEX_SIZE * zoom_level, food['type'], food['amount'])
         else:
             # Рисуем на полупрозрачной поверхности
             surface = pygame.Surface((BASE_HEX_SIZE * 2 * zoom_level, BASE_HEX_SIZE * 2 * zoom_level), pygame.SRCALPHA)
             center = (BASE_HEX_SIZE * zoom_level, BASE_HEX_SIZE * zoom_level)
-            draw_food(center, BASE_HEX_SIZE * zoom_level, food['type'], food['amount'])
-            surface.set_alpha(80)  # прозрачность
+            draw_food(surface, center, BASE_HEX_SIZE * zoom_level, food['type'], food['amount'])
+            surface.set_alpha(80)
             screen.blit(surface, (screen_x - center[0], screen_y - center[1]))
 
     # Рисуем муравьев
@@ -411,6 +455,31 @@ def draw_game_state():
             cy = screen_y + offset_y
 
             isEnemy = ant.get("isEnemy")
+
+            last_moves = ant.get('lastMove')
+            if isinstance(last_moves, list) and len(last_moves) >= 2:
+                for i in range(len(last_moves) - 1):
+                    start_qr = last_moves[i]
+                    end_qr = last_moves[i + 1]
+
+                    if not all(k in start_qr and k in end_qr for k in ('q', 'r')):
+                        continue  # пропуск некорректных данных
+
+                    # Преобразование в экранные координаты
+                    def hex_to_screen(q, r):
+                        x = q * BASE_HEX_WIDTH
+                        if int(r) % 2 == 1:
+                            x += BASE_HEX_WIDTH / 2
+                        y = r * BASE_HEX_VERTICAL_SPACING
+                        sx = WIDTH / 2 + (x - camera_x) * zoom_level
+                        sy = HEIGHT / 2 + (y - camera_y) * zoom_level
+                        return (sx, sy)
+
+                    start_pos = hex_to_screen(float(start_qr["q"]), float(start_qr["r"]))
+                    end_pos = hex_to_screen(float(end_qr["q"]), float(end_qr["r"]))
+
+                    # Нарисовать стрелку
+                    draw_arrow(screen, start_pos, end_pos, color=(200, 200, 255), width=2)
 
             draw_ant((cx, cy), BASE_HEX_SIZE * zoom_level * 0.4, ant['type'], ant.get('isEnemy', isEnemy))
 
