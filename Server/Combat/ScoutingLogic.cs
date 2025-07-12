@@ -74,12 +74,12 @@ public class ScoutingLogic
             if (calculatedPath != null && calculatedPath.Count > 0)
             {
                 Move move = new Move();
-                var length = Math.Min(calculatedPath.Count, Encyclopedia.GetAntStatsByType(ant.Type).Speed);
+                var length = Math.Min(calculatedPath.Count-1, Encyclopedia.GetAntStatsByType(ant.Type).Speed);
                 List<Coordinate> list = new List<Coordinate>();
 
                 for (int i = 0; i < length; i++)
                 {
-                    list.Add(calculatedPath[calculatedPath.Count - 1 - i].ToCoordinate());
+                    list.Add(calculatedPath[calculatedPath.Count - 2 - i].ToCoordinate());
                 }
 
                 move.Path = list;
