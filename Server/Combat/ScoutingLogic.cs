@@ -124,16 +124,16 @@ public class ScoutingLogic
         {
             return -1000;
         }*/
-
+        
         float cost = 0;
 
-        var homeDistCoef = 2;
+        var homeDistCoef = 3;
         if (antType == AntType.Worker)
         {
-            homeDistCoef = 6;
+            homeDistCoef = 8;
         }
 
-        cost -= HexGridHelper.ManhattanDistance(_combat.HomeCells[0], point) * homeDistCoef;
+        cost += HexGridHelper.ManhattanDistance(_combat.HomeCells[0], point) * homeDistCoef;
         cost -= HexGridHelper.ManhattanDistance(currentPosition, point) * 2;
 
         int maxDistToOtherPoints = int.MinValue;
