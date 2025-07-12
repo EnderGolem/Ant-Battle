@@ -29,19 +29,24 @@ internal class Manager
 
             var game = await _api.GetGameStateAsync();
 
-            var input = _combat.Tick(game);
-            
             var jsonGameState = JsonConvert.SerializeObject(game);
-        
+
             // Отправляем JSON данные игры через WebSocket
             _socketManager.BroadcastGameState(jsonGameState);
-            
+
+
+
+            var input = _combat.Tick(game);
+            Console.WriteLine($"Moves {JsonConvert.SerializeObject(input)} ");
+
+            var resultMove = await _api.PostMoveAsync(input);
+
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error during registration: {ex.Message}");
+            Console.WriteLine($"Error during registration: {ex.Message} {ex.StackTrace}");
             return;
         }
-        
+
     }
 }
