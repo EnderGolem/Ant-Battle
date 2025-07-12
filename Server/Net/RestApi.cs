@@ -9,10 +9,10 @@ public class RestApi
 {
 
     private const string _baseUrl = "https://games-test.datsteam.dev/";
-    private string _token = "";
+    private string _token = "1cf58591-1677-40ce-9bf5-b7a8cd9e9502";
     private readonly RestClient _client;
 
-    public RestApi(string token = "")
+    public RestApi(string token = "1cf58591-1677-40ce-9bf5-b7a8cd9e9502")
     {
         var options = new RestClientOptions(_baseUrl)
         {
