@@ -105,6 +105,8 @@ public static class HexGridHelper
 
       return list;
    }
+   
+   
 
    /*public List<HexCellHash> GetAllCellsOccupiedByActor(CombatActor actor)
    {

@@ -19,9 +19,16 @@ public class Strategizer
             }
         }
 
+        List<string> _antsToRemove = new List<string>();
         foreach (var ant in _combat.UnassignedAnts)
         {
-            
+            _combat.Scouts.Add(ant.Key, ant.Value);
+            _antsToRemove.Add(ant.Key);
+        }
+
+        foreach (var removeId in _antsToRemove)
+        {
+            _combat.UnassignedAnts.Remove(removeId);
         }
     }
 }

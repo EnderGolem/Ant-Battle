@@ -30,6 +30,8 @@ public class Combat
 
     private Strategizer _strategizer;
 
+    private ScoutingLogic _scoutingLogic;
+
     public MovesRequest Tick(GameState gameState)
     {
         if (_homeCells.Count == 0)
@@ -40,11 +42,13 @@ public class Combat
             }
 
             _strategizer = new Strategizer(this);
+            _scoutingLogic = new ScoutingLogic(this);
         }
 
 
         _currentGameState = gameState;
         var input = new MovesRequest();
+        List<Move> moves = new List<Move>();
         _hexVisibleThisTick.Clear();
         foreach (var tile in gameState.Map)
         {
@@ -83,10 +87,20 @@ public class Combat
                     _combatField.Field[hex].SetType(HexType.EndOfMap);
                 }
             }
+
+            if (!_scouts.ContainsKey(ant.Id))
+            {
+                _unassignedAnts.Add(ant.Id, ant);
+            }
         }
         
+        _strategizer.Strategize();
         
-        List<Move> moves = new List<Move>();
+        _scoutingLogic.AssignScoutPoints();
+        moves.AddRange(_scoutingLogic.Scout());
+        
+        
+        /*List<Move> moves = new List<Move>();
         for (int i = 0; i < gameState.Ants.Count; i++)
         {
             Move move = new Move();
@@ -99,16 +113,13 @@ public class Combat
             }
 
             moves.Add(move);
-        }
+        }*/
 
         input.Moves = moves;
 
 
         return input;
     }
-
-    public void AssignAntToGroup(string id)
-    {
-        
-    }
+    
 }
+

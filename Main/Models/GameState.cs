@@ -133,7 +133,7 @@ public enum FoodType
 
 public enum AntType
 {
-    Worker = 1,
+    Worker = 0,
     Warrior,
     Scout
 }
