@@ -119,7 +119,7 @@ public class WorkerLogic
             // Проверяем, не занята ли уже эта еда другим рабочим
             bool isTargeted = _workerTargets.Values.Contains(foodPos);
             
-            if (distance < minDistance && !isTargeted && food.Type != FoodType.Nectar)
+            if (distance < minDistance && !isTargeted && (!_combat.HomeCells.Contains(foodPos)) )
             {
                 minDistance = distance;
                 nearestFood = food;
