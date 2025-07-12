@@ -87,7 +87,7 @@ public static class HexGridHelper
       return _astarPathfinder.Pathfind(field, startPos, targetPos, actorIdForCalculation);
    }*/
 
-   public static List<HexCellHash> GetAllPossibleDestinationsForCell(IReadOnlyDictionary<HexCellHash, HexCell> field, 
+   /*public static List<HexCellHash> GetAllPossibleDestinationsForCell(IReadOnlyDictionary<HexCellHash, HexCell> field, 
       HexCellHash pos, int maxDistance, AstarPathfinder pathfinder,  int actorIdForCalculation = -1)
    {
       var list = GetAllCellsInRadius(pos, maxDistance);
@@ -104,7 +104,7 @@ public static class HexGridHelper
       });
 
       return list;
-   }
+   }*/
    
    
 

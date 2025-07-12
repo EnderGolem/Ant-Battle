@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using Priority_Queue;
+using Server.Net.Models;
 
 public class AstarPathfinder
     {
@@ -29,7 +30,8 @@ public class AstarPathfinder
             visited = new Dictionary<HexCellHash, HexNode>(graphSize / 2 + 10);
         }
 
-        public List<HexCellHash> Pathfind(IReadOnlyDictionary<HexCellHash, HexCell> field, HexCellHash startPos,
+        public List<HexCellHash> Pathfind(IReadOnlyDictionary<HexCellHash, HexCell> field,Dictionary<AntType, 
+                HashSet<HexCellHash>> cellsOccupiedByAnts,AntType antType, HexCellHash startPos,
             HexCellHash targetPos, int pathfindForActorId = -1)
         {
             if (!field.ContainsKey(targetPos))
@@ -70,7 +72,7 @@ public class AstarPathfinder
                     }
                 }
 
-                var neighbors = GetNeighborsHex(cur.pos);
+                var neighbors = GetNeighborsHex(cur.pos, cellsOccupiedByAnts, antType);
                 foreach (var neighbor in neighbors)
                 {
                     if (visited.TryGetValue(neighbor.neighbor, out HexNode n))
@@ -96,7 +98,8 @@ public class AstarPathfinder
             return null;
         }
 
-        List<HexNeighborInfo> GetNeighborsHex(HexCellHash pos)
+        List<HexNeighborInfo> GetNeighborsHex(HexCellHash pos, Dictionary<AntType, 
+            HashSet<HexCellHash>> cellsOccupiedByAnts, AntType antType)
         {
             neighbors.Clear();
 
@@ -104,7 +107,7 @@ public class AstarPathfinder
             {
                 if (_field.TryGetValue(neighborPos, out var hexCell))
                 {
-                    if (/*!hexCell.IsOccupied &&*/ hexCell.Passable)
+                    if (/*!hexCell.IsOccupied &&*/ hexCell.Passable && !CellOccupiedByAnt(neighborPos, antType, cellsOccupiedByAnts))
                     {
                         neighbors.Add(new HexNeighborInfo
                         {
@@ -116,6 +119,17 @@ public class AstarPathfinder
             }
             
             return neighbors;
+        }
+
+        private bool CellOccupiedByAnt(HexCellHash cell, AntType antType, Dictionary<AntType, 
+            HashSet<HexCellHash>> cellsOccupiedByAnts)
+        {
+            if (cellsOccupiedByAnts.TryGetValue(antType, out var set))
+            {
+                return set.Contains(cell);
+            }
+
+            return false;
         }
 
 
