@@ -43,7 +43,7 @@ public class ScoutingLogic
                 HexCellHash bestPos = new HexCellHash();
                 foreach (var hex in _combat.MemorizedFields.Field)
                 {
-                    var cost = EstimateCostForPoint(hex.Key, hex.Value);
+                    var cost = EstimateCostForPoint(hex.Key, hex.Value, HexCellHash.FromCoordinate(new Coordinate{Q = scout.Value.Q, R = scout.Value.R}));
                     if (cost > maxCost)
                     {
                         maxCost = cost;
@@ -103,7 +103,7 @@ public class ScoutingLogic
         return res;
     }
 
-    public float EstimateCostForPoint(HexCellHash point, HexCell cell)
+    public float EstimateCostForPoint(HexCellHash point, HexCell cell, HexCellHash currentPosition)
     {
         if (cell.Type != HexType.Fake)
         {
@@ -114,6 +114,7 @@ public class ScoutingLogic
 
 
         cost -= HexGridHelper.ManhattanDistance(_combat.HomeCells[0], point);
+        cost -= HexGridHelper.ManhattanDistance(currentPosition, point) * 2;
 
         int maxDistToOtherPoints = int.MinValue;
 
@@ -127,6 +128,24 @@ public class ScoutingLogic
         }
 
         cost += maxDistToOtherPoints;
+
+        int closeUndiscoveredPoints = 0;
+        foreach (var nearPoint in HexGridHelper.GetAllCellsInRadius(point,4))
+        {
+            if (_combat.MemorizedFields.Field.TryGetValue(nearPoint, out var c))
+            {
+                if (c.Type == HexType.Fake)
+                {
+                    closeUndiscoveredPoints += 1;
+                }
+            }
+            else
+            {
+                closeUndiscoveredPoints += closeUndiscoveredPoints;
+            }
+        }
+
+        cost += closeUndiscoveredPoints;
 
         return cost;
     }
