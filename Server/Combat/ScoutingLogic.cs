@@ -43,7 +43,8 @@ public class ScoutingLogic
                 HexCellHash bestPos = new HexCellHash();
                 foreach (var hex in _combat.MemorizedFields.Field)
                 {
-                    var cost = EstimateCostForPoint(hex.Key, hex.Value, HexCellHash.FromCoordinate(new Coordinate{Q = scout.Value.Q, R = scout.Value.R}));
+                    var cost = EstimateCostForPoint(hex.Key, hex.Value, 
+                        HexCellHash.FromCoordinate(new Coordinate{Q = scout.Value.Q, R = scout.Value.R}),scout.Value.Type);
                     if (cost > maxCost)
                     {
                         maxCost = cost;
@@ -103,17 +104,35 @@ public class ScoutingLogic
         return res;
     }
 
-    public float EstimateCostForPoint(HexCellHash point, HexCell cell, HexCellHash currentPosition)
+    public float EstimateCostForPoint(HexCellHash point, HexCell cell, HexCellHash currentPosition, AntType antType)
     {
+        if (cell.Type == HexType.EndOfMap)
+        {
+            return -100000;
+        }
+
         if (cell.Type != HexType.Fake)
         {
-            return -100;
+            return -1000;
+        }
+
+        var path = _pathfinder.Pathfind(_combat.MemorizedFields.Field, _combat.CellsOccupiedByAnts, antType,
+            currentPosition,
+            point);
+        if (path == null && path.Count < 2)
+        {
+            return -1000;
         }
 
         float cost = 0;
 
+        var homeDistCoef = 1;
+        if (antType == AntType.Worker)
+        {
+            homeDistCoef = 3;
+        }
 
-        cost -= HexGridHelper.ManhattanDistance(_combat.HomeCells[0], point);
+        cost -= HexGridHelper.ManhattanDistance(_combat.HomeCells[0], point) * homeDistCoef;
         cost -= HexGridHelper.ManhattanDistance(currentPosition, point) * 2;
 
         int maxDistToOtherPoints = int.MinValue;
@@ -130,7 +149,7 @@ public class ScoutingLogic
         cost += maxDistToOtherPoints;
 
         int closeUndiscoveredPoints = 0;
-        foreach (var nearPoint in HexGridHelper.GetAllCellsInRadius(point,4))
+        foreach (var nearPoint in HexGridHelper.GetAllCellsInRadius(point,3))
         {
             if (_combat.MemorizedFields.Field.TryGetValue(nearPoint, out var c))
             {
