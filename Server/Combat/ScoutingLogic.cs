@@ -41,7 +41,7 @@ public class ScoutingLogic
             {
                 float maxCost = int.MinValue;
                 HexCellHash bestPos = new HexCellHash();
-                foreach (var hex in _combat.CombatField.Field)
+                foreach (var hex in _combat.MemorizedFields.Field)
                 {
                     var cost = EstimateCostForPoint(hex.Key, hex.Value);
                     if (cost > maxCost)
@@ -69,7 +69,7 @@ public class ScoutingLogic
         {
             var ant = _combat.Scouts[command.Key];
             
-            var calculatedPath = _pathfinder.Pathfind(_combat.CombatField.Field, new HexCellHash(ant.Q, ant.R), command.Value);
+            var calculatedPath = _pathfinder.Pathfind(_combat.MemorizedFields.Field, new HexCellHash(ant.Q, ant.R), command.Value);
 
             if (calculatedPath != null && calculatedPath.Count > 0)
             {

@@ -20,7 +20,7 @@ var taskCycle = Task.Run(async () =>
         }
 
 #if DEBUG
-        await Task.Delay(TimeSpan.FromSeconds(20));
+        await Task.Delay(TimeSpan.FromSeconds(40));
 #endif
 #if RELEASE
         await Task.Delay(TimeSpan.FromSeconds(2));
