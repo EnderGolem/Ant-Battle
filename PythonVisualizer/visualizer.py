@@ -476,19 +476,23 @@ def draw_game_state():
             surface.set_alpha(80)
             screen.blit(surface, (screen_x - center[0], screen_y - center[1]))
 
-    # Рисуем муравьев
-    ants_by_hex = defaultdict(list)
+    # Собираем всех муравьев (союзных и вражеских) для отображения
+    all_ants = defaultdict(list)
+    
+    # Союзные муравьи
     for ant in game_state.get('ants', []):
-        ants_by_hex[(ant['q'], ant['r'])].append(ant)
+        all_ants[(ant['q'], ant['r'])].append((ant, False))  # False - не враг
+        my_ants += 1
+    
+    # Вражеские муравьи
+    for enemy in game_state.get('enemies', []):
+        all_ants[(enemy['q'], enemy['r'])].append((enemy, True))  # True - враг
+        enemy_ants += 1
 
-    # Теперь рисуем муравьев в каждой клетке с разным смещением
-    for (q, r), ants in ants_by_hex.items():
-        if not ants:
-            continue
-
+    # Функция для отрисовки группы муравьев в гексе
+    def draw_ants_in_hex(q, r, ants_data):
         screen_x, screen_y = get_hex_position(q, r)
-
-        num_ants = len(ants)
+        num_ants = len(ants_data)
         radius = BASE_HEX_SIZE * zoom_level * 0.5
 
         # Если муравей один - позиционируем по центру гекса
@@ -502,14 +506,12 @@ def draw_game_state():
                 (radius * math.cos(math.pi / 6), radius * math.sin(math.pi / 6))
             ]
 
-        for i, ant in enumerate(ants):
+        for i, (ant, is_enemy) in enumerate(ants_data):
             if i >= 3:
                 break  # максимум 3 юнита на гекс
             offset_x, offset_y = positions[i]
             cx = screen_x + offset_x
             cy = screen_y + offset_y
-
-            isEnemy = ant.get("isEnemy")
 
             last_moves = ant.get('lastMove')
             if isinstance(last_moves, list) and len(last_moves) >= 2:
@@ -540,21 +542,21 @@ def draw_game_state():
                     # Нарисовать стрелку
                     draw_arrow(screen, start_pos, end_pos, color=(200, 200, 255), width=2)
 
-            draw_ant((cx, cy), BASE_HEX_SIZE * zoom_level * 0.4, ant['type'], ant.get('isEnemy', isEnemy))
+            draw_ant((cx, cy), BASE_HEX_SIZE * zoom_level * 0.4, ant['type'], is_enemy)
 
             # ХП над каждым
             if zoom_level > 0.5:
-                if (isEnemy):
+                if is_enemy:
                     health_text = small_font.render(str(ant['health']), True, TEXT__ENEMY)
                 else:
                     health_text = small_font.render(str(ant['health']), True, TEXT_ALLY)
 
                 screen.blit(health_text, (cx - 10, cy - 20))
 
-            if isEnemy:
-                enemy_ants += 1
-            else:
-                my_ants += 1
+    # Отрисовываем всех муравьев
+    for (q, r), ants_data in all_ants.items():
+        draw_ants_in_hex(q, r, ants_data)
+
     return {
         "turn": turn_number,
         "points": total_points,
@@ -733,6 +735,8 @@ def main():
         # Информация о юнитах
         if game_state:
             ants_on_hex = []
+            
+            # Союзные муравьи
             for ant in game_state.get('ants', []):
                 if ant['q'] == q and ant['r'] == r:
                     ant_type_names = {
@@ -740,9 +744,18 @@ def main():
                         ANT_TYPE_FIGHTER: "Воин",
                         ANT_TYPE_SCOUT: "Разведчик"
                     }
-                    side = "Враг" if ant.get('isEnemy') else ""
-                    ants_on_hex.append(f"{side} {ant_type_names.get(ant['type'], 'Неизвестно')} (HP: {ant['health']}) ID: {ant.get('id', '?')}")
+                    ants_on_hex.append(f"Союзник: {ant_type_names.get(ant['type'], 'Неизвестно')} (HP: {ant['health']}) ID: {ant.get('id', '?')}")
             
+            # Вражеские муравьи
+            for enemy in game_state.get('enemies', []):
+                if enemy['q'] == q and enemy['r'] == r:
+                    ant_type_names = {
+                        ANT_TYPE_WORKER: "Рабочий",
+                        ANT_TYPE_FIGHTER: "Воин",
+                        ANT_TYPE_SCOUT: "Разведчик"
+                    }
+                    ants_on_hex.append(f"Враг: {ant_type_names.get(enemy['type'], 'Неизвестно')} (HP: {enemy['health']}) ID: {enemy.get('id', '?')}")
+
             if ants_on_hex:
                 hex_info.append("Юниты:")
                 hex_info.extend(ants_on_hex)
