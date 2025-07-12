@@ -1,4 +1,6 @@
-﻿using Server.Net.Models;
+using Server.Net.Models;
+using System.Collections.Concurrent;
+using System.Threading.Tasks;
 
 namespace Server.Combat;
 
@@ -69,23 +71,24 @@ public class ScoutingLogic
 
     public List<Move> Scout()
     {
-        List<Move> res = new List<Move>();
-        foreach (var command in _scoutCommands)
+        ConcurrentBag<Move> res = new ConcurrentBag<Move>();
+
+        Parallel.ForEach(_scoutCommands, command =>
         {
             var ant = _combat.Scouts[command.Key];
 
-            if (_combat.CellsOccupiedByAnts.TryGetValue(ant.Type, out var set))
-            {
-                set.Remove(HexCellHash.FromCoordinate(new Coordinate(){Q = ant.Q, R = ant.R}));
-            }
-
-            var calculatedPath = _pathfinder.Pathfind(
-                _combat.MemorizedFields.Field, _combat.CellsOccupiedByAnts,ant.Type,HexCellHash.FromCoordinate(new Coordinate(){Q = ant.Q, R = ant.R}), command.Value);
+            var localPathfinder = new AstarPathfinder(10000);
+            var calculatedPath = localPathfinder.Pathfind(
+                _combat.MemorizedFields.Field,
+                _combat.CellsOccupiedByAnts,
+                ant.Type,
+                HexCellHash.FromCoordinate(new Coordinate { Q = ant.Q, R = ant.R }),
+                command.Value);
 
             if (calculatedPath != null && calculatedPath.Count > 0)
             {
                 Move move = new Move();
-                var length = Math.Min(calculatedPath.Count-1, Encyclopedia.GetAntStatsByType(ant.Type).Speed);
+                var length = Math.Min(calculatedPath.Count - 1, Encyclopedia.GetAntStatsByType(ant.Type).Speed);
                 List<Coordinate> list = new List<Coordinate>();
 
                 for (int i = 0; i < length; i++)
@@ -95,17 +98,12 @@ public class ScoutingLogic
 
                 move.Path = list;
                 move.Ant = ant.Id;
-                if (_combat.CellsOccupiedByAnts.TryGetValue(ant.Type, out var st))
-                {
-                    st.Add(calculatedPath[calculatedPath.Count - 2 - (length -1)]);
-                }
-                
                 res.Add(move);
             }
 
-        }
+        });
 
-        return res;
+        return res.ToList();
     }
 
     public float EstimateCostForPoint(HexCellHash point, HexCell cell, HexCellHash currentPosition, AntType antType)
