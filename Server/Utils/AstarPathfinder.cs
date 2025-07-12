@@ -109,7 +109,7 @@ public class AstarPathfinder
                         neighbors.Add(new HexNeighborInfo
                         {
                             neighbor = neighborPos,
-                            cost = 1
+                            cost = hexCell.Cost
                         });
                     }
                 }
