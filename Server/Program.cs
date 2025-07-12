@@ -19,7 +19,7 @@ var taskCycle = Task.Run(async () =>
             Console.Error.WriteLine($"Ошибка в Cycle: {ex}");
         }
 
-#if Debug
+#if DEBUG
         await Task.Delay(TimeSpan.FromSeconds(20));
 #endif
 #if RELEASE
