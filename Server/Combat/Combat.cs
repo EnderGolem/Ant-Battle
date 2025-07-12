@@ -65,6 +65,7 @@ public class Combat
 
         CheckingAnts(gameState);
 
+        CheckingFood(gameState);
 
 
         _strategizer.Strategize();
@@ -105,6 +106,24 @@ public class Combat
 
 
         return input;
+    }
+
+    private void CheckingFood(GameState gameState)
+    {
+        foreach (var food in gameState.Food)
+        {
+            var hash = HexCellHash.FromCoordinate(new Coordinate() { Q = food.Q, R = food.R });
+            _combatField.AddFood(hash, food);
+        }
+
+        var mapsInHexCell = gameState.Map.Select(x => HexCellHash.FromCoordinate(new Coordinate(x.Q, x.R))).ToList();
+        var foodsInHexCell = gameState.Food.Select(x => HexCellHash.FromCoordinate(new Coordinate(x.Q, x.R))).ToList();
+        foreach (var food in _combatField.Field)
+        {
+            if (mapsInHexCell.Contains(food.Key) && !foodsInHexCell.Contains(food.Key))            
+                _combatField.Remove(food.Key);
+            
+        }
     }
 
     private void CheckingAnts(GameState gameState)

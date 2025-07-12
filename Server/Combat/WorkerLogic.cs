@@ -107,8 +107,10 @@ public class WorkerLogic
         FoodOnMap? nearestFood = null;
         float minDistance = float.MaxValue;
 
-        foreach (var food in _combat.CurrentGameState.Food)
+        //foreach (var food in _combat.CurrentGameState.Food) Если не сработает, то верни
+        foreach (var foodKeyValue in _combat.MemorizedFields.Foods)
         {
+            var food = foodKeyValue.Value;
             var foodPos = HexCellHash.FromCoordinate(new Coordinate(){Q = food.Q, R = food.R});
             float distance = HexGridHelper.ManhattanDistance(currentPos, foodPos);
             
