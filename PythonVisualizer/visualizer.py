@@ -105,6 +105,9 @@ connection_failed = False
 last_reconnect_time = 0
 RECONNECT_COOLDOWN = 2  # seconds
 
+# Режим отображения координат (True - axial, False - odd-r)
+axial_view = False
+
 # WebSocket функции
 def on_open(ws):
     global connection_failed
@@ -234,9 +237,58 @@ def screen_to_hex(pos):
     x, y = pos
     world_x = (x - WIDTH/2) / zoom_level + camera_x
     world_y = (y - HEIGHT/2) / zoom_level + camera_y
-    row = round(world_y / BASE_HEX_VERTICAL_SPACING)
-    col = round((world_x - (row % 2) * BASE_HEX_WIDTH / 2) / BASE_HEX_WIDTH)
-    return (int(col), int(row))
+    
+    if axial_view:
+        # Преобразование для axial координат
+        q = (math.sqrt(3)/3 * world_x - 1./3 * world_y) / BASE_HEX_SIZE
+        r = (2./3 * world_y) / BASE_HEX_SIZE
+        axial_q, axial_r = axial_round(q, r)
+        return (axial_q, axial_r)
+    else:
+        # Преобразование для odd-r координат
+        row = round(world_y / BASE_HEX_VERTICAL_SPACING)
+        col = round((world_x - (row % 2) * BASE_HEX_WIDTH / 2) / BASE_HEX_WIDTH)
+        return (int(col), int(row))
+
+def axial_round(q, r):
+    """Округление осевых координат до ближайшего гекса"""
+    x = q
+    z = r
+    y = -x - z
+    
+    rx = round(x)
+    ry = round(y)
+    rz = round(z)
+    
+    x_diff = abs(rx - x)
+    y_diff = abs(ry - y)
+    z_diff = abs(rz - z)
+    
+    if x_diff > y_diff and x_diff > z_diff:
+        rx = -ry - rz
+    elif y_diff > z_diff:
+        ry = -rx - rz
+    else:
+        rz = -rx - ry
+    
+    return (rx, rz)
+
+def get_hex_position(q, r):
+    """Возвращает экранные координаты для гекса с координатами (q, r) в текущем режиме отображения"""
+    if axial_view:
+        # Для axial координат
+        x = BASE_HEX_SIZE * (math.sqrt(3) * q + math.sqrt(3)/2 * r)
+        y = BASE_HEX_SIZE * (3./2 * r)
+    else:
+        # Для odd-r координат
+        x = q * BASE_HEX_WIDTH
+        if r % 2 == 1:
+            x += BASE_HEX_WIDTH / 2
+        y = r * BASE_HEX_VERTICAL_SPACING
+    
+    screen_x = WIDTH/2 + (x - camera_x) * zoom_level
+    screen_y = HEIGHT/2 + (y - camera_y) * zoom_level
+    return (screen_x, screen_y)
 
 def draw_ant(center, size, ant_type, is_enemy):
     fill_color = (255, 0, 0) if is_enemy else (64, 64, 255)  # Цвет тела
@@ -360,13 +412,7 @@ def draw_game_state():
         hex_type = hex_data['type']
         discovered_hexes[(q, r)] = hex_type
         
-        hex_x = q * BASE_HEX_WIDTH
-        if r % 2 == 1:
-            hex_x += BASE_HEX_WIDTH / 2
-        hex_y = r * BASE_HEX_VERTICAL_SPACING
-
-        screen_x = WIDTH/2 + (hex_x - camera_x) * zoom_level
-        screen_y = HEIGHT/2 + (hex_y - camera_y) * zoom_level
+        screen_x, screen_y = get_hex_position(q, r)
         
         draw_hexagon((screen_x, screen_y), BASE_HEX_SIZE * zoom_level, 
                     HEX_COLORS.get(hex_type, (50, 50, 150)), HEX_LINE_COLOR)
@@ -387,13 +433,8 @@ def draw_game_state():
     for (q, r), hex_type in discovered_hexes.items():
         if (q, r) in visible_coords:
             continue
-        hex_x = q * BASE_HEX_WIDTH
-        if r % 2 == 1:
-            hex_x += BASE_HEX_WIDTH / 2
-        hex_y = r * BASE_HEX_VERTICAL_SPACING
-
-        screen_x = WIDTH/2 + (hex_x - camera_x) * zoom_level
-        screen_y = HEIGHT/2 + (hex_y - camera_y) * zoom_level
+        
+        screen_x, screen_y = get_hex_position(q, r)
 
         # Создание полупрозрачной поверхности
         size = BASE_HEX_SIZE * zoom_level
@@ -413,13 +454,7 @@ def draw_game_state():
     # Рисуем муравейник
     for home in game_state.get('home', []):
         q, r = home['q'], home['r']
-        hex_x = q * BASE_HEX_WIDTH
-        if r % 2 == 1:
-            hex_x += BASE_HEX_WIDTH / 2
-        hex_y = r * BASE_HEX_VERTICAL_SPACING
-
-        screen_x = WIDTH/2 + (hex_x - camera_x) * zoom_level
-        screen_y = HEIGHT/2 + (hex_y - camera_y) * zoom_level
+        screen_x, screen_y = get_hex_position(q, r)
         
         pygame.draw.circle(screen, (255, 215, 0), (int(screen_x), int(screen_y)), int(5 * zoom_level))
 
@@ -427,13 +462,7 @@ def draw_game_state():
     for (q, r), food in discovered_food.items():
         food_count += 1
 
-        hex_x = q * BASE_HEX_WIDTH
-        if r % 2 == 1:
-            hex_x += BASE_HEX_WIDTH / 2
-        hex_y = r * BASE_HEX_VERTICAL_SPACING
-
-        screen_x = WIDTH/2 + (hex_x - camera_x) * zoom_level
-        screen_y = HEIGHT/2 + (hex_y - camera_y) * zoom_level
+        screen_x, screen_y = get_hex_position(q, r)
 
         # Полупрозрачность для скрытой еды
         visible = (q, r) in visible_coords
@@ -457,13 +486,7 @@ def draw_game_state():
         if not ants:
             continue
 
-        hex_x = q * BASE_HEX_WIDTH
-        if r % 2 == 1:
-            hex_x += BASE_HEX_WIDTH / 2
-        hex_y = r * BASE_HEX_VERTICAL_SPACING
-
-        screen_x = WIDTH/2 + (hex_x - camera_x) * zoom_level
-        screen_y = HEIGHT/2 + (hex_y - camera_y) * zoom_level
+        screen_x, screen_y = get_hex_position(q, r)
 
         num_ants = len(ants)
         radius = BASE_HEX_SIZE * zoom_level * 0.5
@@ -499,10 +522,14 @@ def draw_game_state():
 
                     # Преобразование в экранные координаты
                     def hex_to_screen(q, r):
-                        x = q * BASE_HEX_WIDTH
-                        if int(r) % 2 == 1:
-                            x += BASE_HEX_WIDTH / 2
-                        y = r * BASE_HEX_VERTICAL_SPACING
+                        if axial_view:
+                            x = BASE_HEX_SIZE * (math.sqrt(3) * q + math.sqrt(3)/2 * r)
+                            y = BASE_HEX_SIZE * (3./2 * r)
+                        else:
+                            x = q * BASE_HEX_WIDTH
+                            if int(r) % 2 == 1:
+                                x += BASE_HEX_WIDTH / 2
+                            y = r * BASE_HEX_VERTICAL_SPACING
                         sx = WIDTH / 2 + (x - camera_x) * zoom_level
                         sy = HEIGHT / 2 + (y - camera_y) * zoom_level
                         return (sx, sy)
@@ -558,17 +585,15 @@ def center_on_home():
     home = game_state['home'][0]
     q, r = home['q'], home['r']
     
-    hex_x = q * BASE_HEX_WIDTH
-    if r % 2 == 1:
-        hex_x += BASE_HEX_WIDTH / 2
-    hex_y = r * BASE_HEX_VERTICAL_SPACING
+    screen_x, screen_y = get_hex_position(q, r)
     
-    camera_x = hex_x
-    camera_y = hex_y
+    # Преобразуем обратно в мировые координаты
+    camera_x = (screen_x - WIDTH/2) / zoom_level + camera_x
+    camera_y = (screen_y - HEIGHT/2) / zoom_level + camera_y
     zoom_level = 1.0  # Сбрасываем зум при центрировании
 
 def main():
-    global camera_x, camera_y, zoom_level, dragging, last_mouse_pos, ws, running, connection_failed
+    global camera_x, camera_y, zoom_level, dragging, last_mouse_pos, ws, running, connection_failed, axial_view
 
     signal.signal(signal.SIGINT, graceful_exit)
     connect_websocket()
@@ -620,6 +645,9 @@ def main():
                     discovered_hexes.clear()
                     discovered_food.clear()
                     print("Обнаруженные клетки сброшены.")
+                elif event.key == pygame.K_a:
+                    axial_view = not axial_view
+                    print(f"Переключено в режим {'axial' if axial_view else 'odd-r'} координат")
 
         # Клавиши
         keys = pygame.key.get_pressed()
@@ -652,7 +680,8 @@ def main():
                 f"Противники: {stats['enemies']}",
                 f"Еда: {stats['food']}",
                 f"Видимые клетки: {stats['cells']}",
-                f"Изученные клетки: {len(discovered_hexes)}"
+                f"Изученные клетки: {len(discovered_hexes)}",
+                f"Режим: {'axial' if axial_view else 'odd-r'} ('A' - переключить)"
             ]
             for i, line in enumerate(info_lines):
                 info_text = font.render(line, True, TEXT_COLOR)
@@ -669,13 +698,7 @@ def main():
 
         # Отрисовка обводки гекса под курсором
         q, r = hex_coords
-        hex_x = q * BASE_HEX_WIDTH
-        if r % 2 == 1:
-            hex_x += BASE_HEX_WIDTH / 2
-        hex_y = r * BASE_HEX_VERTICAL_SPACING
-
-        screen_x = WIDTH/2 + (hex_x - camera_x) * zoom_level
-        screen_y = HEIGHT/2 + (hex_y - camera_y) * zoom_level
+        screen_x, screen_y = get_hex_position(q, r)
 
         # Рисуем желтую обводку
         points = [hex_corner((screen_x, screen_y), BASE_HEX_SIZE * zoom_level, i) for i in range(6)]
@@ -724,7 +747,6 @@ def main():
                 hex_info.append("Юниты:")
                 hex_info.extend(ants_on_hex)
 
-        # Отображаем информацию о гексе
         # Отображаем информацию о гексе
         if hex_info:
             title = font.render(f"Гекс ({q}, {r})", True, (255, 255, 0))
