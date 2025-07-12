@@ -1,4 +1,5 @@
 using Server.Net.Models;
+using System;
 using System.Collections.Concurrent;
 using System.Threading.Tasks;
 
@@ -132,12 +133,66 @@ public class WorkerLogic
             _workerTargets[workerId] = HexCellHash.FromCoordinate(new Coordinate(){Q = nearestFood.Q, R = nearestFood.R});
         }
 
-        //ЗАГЛУШКА возможно стоит заменить
+        // Если еды нет, выбираем случайную точку в радиусе до 10 от базы
         if (nearestFood == null)
         {
-            _workerStates[workerId] = WorkerState.SearchingFood;
-            _workerTargets[workerId] = currentPos + HexCellHash.RightUp();
+            var randomTarget = FindRandomPointNearBase();
+            if (randomTarget != null)
+            {
+                _workerStates[workerId] = WorkerState.MovingToFood;
+                _workerTargets[workerId] = randomTarget.Value;
+            }
+            else
+            {
+                // Если не удалось найти подходящую точку, остаемся в поиске
+                _workerStates[workerId] = WorkerState.SearchingFood;
+            }
         }
+    }
+
+    private HexCellHash? FindRandomPointNearBase()
+    {
+        var basePos = _combat.HomeCells[0];
+        var random = new Random();
+        const int maxRadius = 15;
+        const int maxAttempts = 50;
+        
+        for (int attempt = 0; attempt < maxAttempts; attempt++)
+        {
+            // Генерируем случайную точку в радиусе до 10 от базы
+            int radius = random.Next(3, maxRadius + 1);
+            var allCellsInRadius = HexGridHelper.GetAllCellsInRadius(basePos, radius);
+            
+            if (allCellsInRadius.Count > 0)
+            {
+                var randomCell = allCellsInRadius[random.Next(allCellsInRadius.Count)];
+                
+                // Проверяем, что точка не занята и проходима
+                if (_combat.MemorizedFields.Field.TryGetValue(randomCell, out var cell))
+                {
+                    // Проверяем, что клетка проходима и не является домом
+                    if (cell.Type != HexType.EndOfMap && 
+                        cell.Type != HexType.Acid && 
+                        cell.Type != HexType.Obstacle &&
+                        !_combat.HomeCells.Contains(randomCell) &&
+                        !_workerTargets.Values.Contains(randomCell))
+                    {
+                        return randomCell;
+                    }
+                }
+                else
+                {
+                    // Если клетка неизвестна, можем попробовать туда пойти
+                    if (!_combat.HomeCells.Contains(randomCell) &&
+                        !_workerTargets.Values.Contains(randomCell))
+                    {
+                        return randomCell;
+                    }
+                }
+            }
+        }
+        
+        return null; // Не удалось найти подходящую точку
     }
 
     public List<Move> GetWorkerMoves()
