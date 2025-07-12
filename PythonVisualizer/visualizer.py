@@ -118,21 +118,33 @@ def on_open(ws):
 def on_message(ws, message):
     global game_state
     try:
-        oldTurn = game_state.get('turnNo', 0)
-        first_state = (game_state == None)
-        game_state = json.loads(message)
+        if not message:
+            print("[WebSocket] Получено пустое сообщение")
+            return
+            
+        data = json.loads(message)
+        if not data:
+            print("[WebSocket] Пустой JSON после парсинга")
+            return
+            
+        oldTurn = game_state.get('turnNo', 0) if game_state else 0
+        first_state = (game_state is None)
+        game_state = data
         turn = game_state.get('turnNo', 0)
-        if (turn == 0 and oldTurn != 0):
+        
+        if turn == 0 and oldTurn != 0:
             end_round_sound.play()
             discovered_hexes.clear()
             discovered_food.clear()
-        if (turn == 1 and oldTurn != 1): #Начало раунда
+        if turn == 1 and oldTurn != 1:  # Начало раунда
             start_round_sound.play()
             center_on_home()
-        if (turn > 0 and first_state):
+        if turn > 0 and first_state:
             center_on_home()
     except json.JSONDecodeError as e:
-        print(f"[WebSocket] Error decoding message: {e}")
+        print(f"[WebSocket] Ошибка декодирования JSON: {e}")
+    except Exception as e:
+        print(f"[WebSocket] Неожиданная ошибка: {e}")
 
 def on_pong(ws, frame_data):
     print("[WebSocket] Pong received")
@@ -468,7 +480,7 @@ def draw_game_state():
         pygame.draw.circle(screen, (255, 215, 0), (int(screen_x), int(screen_y)), int(5 * zoom_level))
 
     # Рисуем ресурсы
-    for (q, r), food in discovered_food.items():
+    for (q, r), food in list(discovered_food.items()):
         food_count += 1
 
         screen_x, screen_y = get_hex_position(q, r)
@@ -616,6 +628,17 @@ def main():
 
     while running:
         screen.fill(BACKGROUND)
+        
+        # Если нет данных о состоянии игры, выводим сообщение
+        if game_state is None:
+            no_state_text = font.render(
+                "Ожидание данных... ('S' - загрузить из файла, 'R' - переподключиться)",
+                True, (255, 255, 0)
+            )
+            screen.blit(no_state_text, (WIDTH//2 - 200, HEIGHT//2))
+            pygame.display.flip()
+            clock.tick(60)
+            continue
 
         # Обработка событий
         for event in pygame.event.get():
