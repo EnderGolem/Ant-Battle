@@ -48,36 +48,65 @@ public class Combat
 
         _currentGameState = gameState;
         var input = new MovesRequest();
-        List<Move> moves = new List<Move>();
         _hexVisibleThisTick.Clear();
-        foreach (var tile in gameState.Map)
-        {
-            var hash = new HexCellHash(tile.Q, tile.R);
-            var hexCell = Encyclopedia.CreateHexCellFromType((HexType)tile.Type);
-            if (hexCell.Type == HexType.Base)
-            {
-                if(_homeCells.Contains(hash))
-                {
-                    hexCell.SetType(HexType.EnemyBase);
-                }
-            }
 
-            _hexVisibleThisTick.Add(hash);
-            _combatField.SetHexCell(hash, hexCell);
-        }
 
+        CheckingMap(gameState);
+
+        CheckingAnts(gameState);
+
+
+
+        _strategizer.Strategize();
+
+        _scoutingLogic.AssignScoutPoints();
+
+        List<Move> moves = new List<Move>();
+        moves.AddRange(_scoutingLogic.Scout());
+
+        //List<Move> moves = new List<Move>();
+        //for (int i = 0; i < gameState.Ants.Count; i++)
+        //{
+        //    Move move = new Move();
+        //    move.Ant = gameState.Ants[i].Id;
+        //    var antPos = new HexCellHash(gameState.Ants[i].Q, gameState.Ants[i].R);
+        //    List<Coordinate> path = new List<Coordinate>(3);
+
+
+        //    for (int j = 0; j < 3; j++)
+        //    {
+        //        if (AntType.Scout == gameState.Ants[i].Type)
+        //            path.Add((antPos + HexCellHash.RightUp() * (j + 1)).ToCoordinate());
+        //        if (AntType.Worker == gameState.Ants[i].Type)
+        //            path.Add((antPos + HexCellHash.Left() * (j + 1)).ToCoordinate());
+        //        if (AntType.Warrior == gameState.Ants[i].Type)
+        //            path.Add((antPos + HexCellHash.LeftDown() * (j + 1)).ToCoordinate());
+        //    }
+        //    move.Path = path;
+        //    moves.Add(move);
+        //}
+
+
+        input.Moves = moves;
+
+
+        return input;
+    }
+
+    private void CheckingAnts(GameState gameState)
+    {
         foreach (var ant in gameState.Ants)
         {
             var stats = Encyclopedia.GetAntStatsByType(ant.Type);
-            
+
             var cellsToFake = HexGridHelper.GetAllCellsInRadius(new HexCellHash(ant.Q, ant.R), stats.Speed);
 
             foreach (var hash in cellsToFake)
             {
-                _combatField.AddFakeCell(hash,Encyclopedia.CreateHexCellFromType(HexType.Fake));
+                _combatField.AddFakeCell(hash, Encyclopedia.CreateHexCellFromType(HexType.Fake));
             }
 
-            var hexShouldBeVisible = 
+            var hexShouldBeVisible =
                 HexGridHelper.GetAllCellsInRadius(new HexCellHash(ant.Q, ant.R), stats.Sight);
 
             foreach (var hex in hexShouldBeVisible)
@@ -93,33 +122,25 @@ public class Combat
                 _unassignedAnts.Add(ant.Id, ant);
             }
         }
-        
-        _strategizer.Strategize();
-        
-        _scoutingLogic.AssignScoutPoints();
-        moves.AddRange(_scoutingLogic.Scout());
-        
-        
-        /*List<Move> moves = new List<Move>();
-        for (int i = 0; i < gameState.Ants.Count; i++)
+    }
+
+    private void CheckingMap(GameState gameState)
+    {
+        foreach (var tile in gameState.Map)
         {
-            Move move = new Move();
-            move.Ant = gameState.Ants[i].Id;
-            var antPos = new HexCellHash(gameState.Ants[i].Q, gameState.Ants[i].R);
-            List<Coordinate> path = new List<Coordinate>(3);
-            for (int j = 0; j < 3; j++)
+            var hash = new HexCellHash(tile.Q, tile.R);
+            var hexCell = Encyclopedia.CreateHexCellFromType((HexType)tile.Type);
+            if (hexCell.Type == HexType.Base)
             {
-                path.Add((antPos + HexCellHash.Left() * j).ToCoordinate());
+                if (_homeCells.Contains(hash))
+                {
+                    hexCell.SetType(HexType.EnemyBase);
+                }
             }
 
-            moves.Add(move);
-        }*/
-
-        input.Moves = moves;
-
-
-        return input;
+            _hexVisibleThisTick.Add(hash);
+            _combatField.SetHexCell(hash, hexCell);
+        }
     }
-    
 }
 
