@@ -30,6 +30,13 @@ public class WorkerLogic
             
             // Обновляем состояние в зависимости от текущей ситуации
             UpdateWorkerState(worker.Key, ant, currentPos);
+            
+
+            if(_workerStates[worker.Key] == WorkerState.SearchingFood)
+            {
+                _combat.UnassignedAnts.Add(worker.Key, worker.Value);
+            }
+
         }
     }
 
@@ -122,11 +129,11 @@ public class WorkerLogic
         }
 
         //ЗАГЛУШКА возможно стоит заменить
-        if(nearestFood == null)
-        {
-            _workerStates[workerId] = WorkerState.SearchingFood;
-            _workerTargets[workerId] = currentPos + HexCellHash.RightUp();
-        }
+        //if(nearestFood == null)
+        //{
+        //    _workerStates[workerId] = WorkerState.SearchingFood;
+        //    _workerTargets[workerId] = currentPos + HexCellHash.RightUp();
+        //}
     }
 
     public List<Move> GetWorkerMoves()

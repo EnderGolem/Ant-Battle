@@ -68,9 +68,10 @@ public class Combat
 
 
         _strategizer.Strategize();
-
-        _scoutingLogic.AssignScoutPoints();
         _workerLogic.AssignWorkerTasks();
+
+        _strategizer.PostStrategize();
+        _scoutingLogic.AssignScoutPoints();
 
 
         List<Move> moves = new List<Move>();
