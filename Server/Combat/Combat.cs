@@ -118,7 +118,9 @@ public class Combat
 
         var mapsInHexCell = gameState.Map.Select(x => HexCellHash.FromCoordinate(new Coordinate(x.Q, x.R))).ToList();
         var foodsInHexCell = gameState.Food.Select(x => HexCellHash.FromCoordinate(new Coordinate(x.Q, x.R))).ToList();
-        foreach (var food in _combatField.Field)
+
+        var saveFoodFromLast = _combatField.Field;
+        foreach (var food in saveFoodFromLast)
         {
             if (mapsInHexCell.Contains(food.Key) && !foodsInHexCell.Contains(food.Key))            
                 _combatField.Remove(food.Key);
