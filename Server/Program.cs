@@ -35,12 +35,16 @@ var cliTask = Task.Run(() =>
     // Выводим справку при запуске
     Console.WriteLine("=== Консольные команды ===");
     Console.WriteLine("  test  - тестовая команда");
-    Console.WriteLine("  right - все боты делают 2 шага вправо");
-    Console.WriteLine("  left  - все боты делают 2 шага влево");
+    Console.WriteLine("  r     - все боты делают N шагов вправо");
+    Console.WriteLine("  l     - все боты делают N шагов влево");
+    Console.WriteLine("  ru    - все боты делают N шагов вправо-вверх");
+    Console.WriteLine("  rd    - все боты делают N шагов вправо-вниз");
+    Console.WriteLine("  lu    - все боты делают N шагов влево-вверх");
+    Console.WriteLine("  ld    - все боты делают N шагов влево-вниз");
     Console.WriteLine("  stop  - остановить сервер");
     Console.WriteLine("  help  - показать эту справку");
     Console.WriteLine("=========================");
-    
+
     while (true)
     {
         var input = Console.ReadLine();
@@ -55,15 +59,28 @@ var cliTask = Task.Run(() =>
             socketManager.Stop();
             Environment.Exit(0);
         }
-        else if (input.Equals("right", StringComparison.OrdinalIgnoreCase))
+        else if (input.StartsWith("r ", StringComparison.OrdinalIgnoreCase) ||
+                 input.StartsWith("l ", StringComparison.OrdinalIgnoreCase) ||
+                 input.StartsWith("ru ", StringComparison.OrdinalIgnoreCase) ||
+                 input.StartsWith("rd ", StringComparison.OrdinalIgnoreCase) ||
+                 input.StartsWith("lu ", StringComparison.OrdinalIgnoreCase) ||
+                 input.StartsWith("ld ", StringComparison.OrdinalIgnoreCase))
         {
             try
             {
                 if (manager.Combat != null)
                 {
-                    Console.WriteLine("Команда: все боты делают 2 шага вправо");
-                    var forcedMoves = manager.Combat.ForceMoveBots(true);
-                    manager.SetForcedMoves(forcedMoves);
+                    var parts = input.Split(' ');
+                    if (parts.Length == 2 && int.TryParse(parts[1], out int steps) && steps > 0)
+                    {
+                        Console.WriteLine($"Команда: все боты делают {steps} шагов в направлении {parts[0]}");
+                        var forcedMoves = manager.Combat.ForceMoveBots(parts[0].ToLower(), steps);
+                        manager.SetForcedMoves(forcedMoves);
+                    }
+                    else
+                    {
+                        Console.WriteLine("Некорректный формат команды. Используйте: [направление] [количество шагов]");
+                    }
                 }
                 else
                 {
@@ -72,35 +89,19 @@ var cliTask = Task.Run(() =>
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Ошибка при выполнении команды 'right': {ex.Message}");
-            }
-        }
-        else if (input.Equals("left", StringComparison.OrdinalIgnoreCase))
-        {
-            try
-            {
-                if (manager.Combat != null)
-                {
-                    Console.WriteLine("Команда: все боты делают 2 шага влево");
-                    var forcedMoves = manager.Combat.ForceMoveBots(false);
-                    manager.SetForcedMoves(forcedMoves);
-                }
-                else
-                {
-                    Console.WriteLine("Combat не инициализирован. Подождите начала игры.");
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Ошибка при выполнении команды 'left': {ex.Message}");
+                Console.WriteLine($"Ошибка при выполнении команды '{input}': {ex.Message}");
             }
         }
         else if (input.Equals("help", StringComparison.OrdinalIgnoreCase) || !string.IsNullOrWhiteSpace(input))
         {
             Console.WriteLine("=== Доступные команды ===");
             Console.WriteLine("  test  - тестовая команда");
-            Console.WriteLine("  right - все боты делают 2 шага вправо");
-            Console.WriteLine("  left  - все боты делают 2 шага влево");
+            Console.WriteLine("  r N   - все боты делают N шагов вправо");
+            Console.WriteLine("  l N   - все боты делают N шагов влево");
+            Console.WriteLine("  ru N  - все боты делают N шагов вправо-вверх");
+            Console.WriteLine("  rd N  - все боты делают N шагов вправо-вниз");
+            Console.WriteLine("  lu N  - все боты делают N шагов влево-вверх");
+            Console.WriteLine("  ld N  - все боты делают N шагов влево-вниз");
             Console.WriteLine("  stop  - остановить сервер");
             Console.WriteLine("  help  - показать эту справку");
             Console.WriteLine("========================");

@@ -186,15 +186,16 @@ public class Combat
     }
 
     /// <summary>
-    /// Принудительно перемещает всех ботов на 2 шага в указанном направлении
+    /// Принудительно перемещает всех ботов в указанном направлении на заданное количество шагов
     /// </summary>
-    /// <param name="moveRight">true для движения вправо, false для движения влево</param>
+    /// <param name="direction">Направление движения (r, l, ru, rd, lu, ld)</param>
+    /// <param name="steps">Количество шагов</param>
     /// <returns>MovesRequest с принудительными перемещениями</returns>
-    public MovesRequest ForceMoveBots(bool moveRight)
+    public MovesRequest ForceMoveBots(string direction, int steps)
     {
         var moves = new List<Move>();
         var allAnts = new Dictionary<string, Ant>();
-        
+
         // Собираем всех муравьев
         foreach (var scout in _scouts)
             allAnts[scout.Key] = scout.Value;
@@ -208,18 +209,45 @@ public class Combat
             var currentPos = new Coordinate() { Q = ant.Value.Q, R = ant.Value.R };
             var path = new List<Coordinate>();
 
-            // Создаем путь из 2 шагов
-            for (int i = 0; i < 2; i++)
+            // Создаем путь из указанного количества шагов
+            for (int i = 0; i < steps; i++)
             {
-                if (moveRight)
+                switch (direction)
                 {
-                    // Движение вправо в гексагональной сетке
-                    currentPos = new Coordinate() { Q = currentPos.Q + 1, R = currentPos.R };
-                }
-                else
-                {
-                    // Движение влево в гексагональной сетке
-                    currentPos = new Coordinate() { Q = currentPos.Q - 1, R = currentPos.R };
+                    case "r":  // вправо
+                        currentPos = new Coordinate() { Q = currentPos.Q + 1, R = currentPos.R };
+                        break;
+                    case "l":  // влево
+                        currentPos = new Coordinate() { Q = currentPos.Q - 1, R = currentPos.R };
+                        break;
+                    case "ru": // вправо-вверх (для odd-r)
+                        currentPos = new Coordinate()
+                        {
+                            Q = currentPos.Q + (currentPos.R % 2 == 0 ? 0 : 1),
+                            R = currentPos.R - 1
+                        };
+                        break;
+                    case "rd": // вправо-вниз (для odd-r)
+                        currentPos = new Coordinate()
+                        {
+                            Q = currentPos.Q + (currentPos.R % 2 == 0 ? 0 : 1),
+                            R = currentPos.R + 1
+                        };
+                        break;
+                    case "lu": // влево-вверх (для odd-r)
+                        currentPos = new Coordinate()
+                        {
+                            Q = currentPos.Q - (currentPos.R % 2 == 1 ? 0 : 1),
+                            R = currentPos.R - 1
+                        };
+                        break;
+                    case "ld": // влево-вниз (для odd-r)
+                        currentPos = new Coordinate()
+                        {
+                            Q = currentPos.Q - (currentPos.R % 2 == 1 ? 0 : 1),
+                            R = currentPos.R + 1
+                        };
+                        break;
                 }
                 path.Add(new Coordinate() { Q = currentPos.Q, R = currentPos.R });
             }
@@ -231,9 +259,8 @@ public class Combat
             });
         }
 
-        Console.WriteLine($"Принудительное перемещение {moves.Count} ботов {(moveRight ? "вправо" : "влево")}");
-        
+        Console.WriteLine($"Принудительное перемещение {moves.Count} ботов в направлении {direction} на {steps} шагов");
+
         return new MovesRequest() { Moves = moves };
     }
-}
 
