@@ -52,7 +52,7 @@ public static class Encyclopedia
                 passable = true;
                 break;
             case HexType.Acid:
-                cost = 1;
+                cost = 10;
                 passable = true;
                 break;
             case HexType.Obstacle:

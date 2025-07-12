@@ -104,12 +104,12 @@ public class AstarPathfinder
             {
                 if (_field.TryGetValue(neighborPos, out var hexCell))
                 {
-                    if (/*!hexCell.IsOccupied &&*/ !hexCell.Passable)
+                    if (/*!hexCell.IsOccupied &&*/ hexCell.Passable)
                     {
                         neighbors.Add(new HexNeighborInfo
                         {
                             neighbor = neighborPos,
-                            cost = 1
+                            cost = hexCell.Cost
                         });
                     }
                 }
