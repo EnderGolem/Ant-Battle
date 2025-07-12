@@ -16,6 +16,15 @@ WIDTH, HEIGHT = 1200, 800
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Ant Arena Visualizer")
 
+# Загрузка текстур еды
+try:
+    texture_apple = pygame.image.load("apple.png").convert_alpha()
+    texture_bread = pygame.image.load("bread.png").convert_alpha()
+    texture_nectar = pygame.image.load("nectar.png").convert_alpha()
+except Exception as e:
+    print(f"[Error] Не удалось загрузить текстуры еды: {e}")
+    texture_apple = texture_bread = texture_nectar = None
+
 # Настройки сервера
 WS_URL = "ws://37.48.249.190:8080/echo"
 PING_INTERVAL = 10  # seconds
@@ -227,20 +236,25 @@ def draw_ant(center, size, ant_type):
         pygame.draw.circle(screen, color, center, int(size * 0.8))
 
 def draw_food(center, size, food_type, amount):
-    color = FOOD_COLORS.get(food_type, (255, 255, 255))
-    
+    image = None
     if food_type == FOOD_APPLE:
-        pygame.draw.circle(screen, color, center, int(size * 0.6))
-        pygame.draw.line(screen, (101, 67, 33), 
-                        (center[0], center[1] - size * 0.6),
-                        (center[0] - size * 0.3, center[1] - size * 0.8), 2)
+        image = texture_apple
     elif food_type == FOOD_BREAD:
-        pygame.draw.rect(screen, color, 
-                         (center[0] - size * 0.5, center[1] - size * 0.4, 
-                          size, size * 0.8))
+        image = texture_bread
+    elif food_type == FOOD_NECTAR:
+        image = texture_nectar
+
+    if image:
+        # Масштабируем изображение под размер гекса
+        scaled_size = int(size * 1.1)
+        image = pygame.transform.smoothscale(image, (scaled_size, scaled_size))
+        rect = image.get_rect(center=center)
+        screen.blit(image, rect)
     else:
-        draw_star(center, size * 0.7, color)
-    
+        # Фоллбэк — цветная фигура
+        color = FOOD_COLORS.get(food_type, (255, 255, 255))
+        pygame.draw.circle(screen, color, center, int(size * 0.6))
+
     # Отображаем количество
     amount_text = small_font.render(str(amount), True, TEXT_COLOR)
     screen.blit(amount_text, (center[0] - 5, center[1] + size * 0.7))
