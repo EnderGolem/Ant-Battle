@@ -11,11 +11,16 @@ from collections import defaultdict
 discovered_hexes = {}  # ключ (q, r): hex_type
 discovered_food = {}  # ключ: (q, r) -> словарь с type и amount
 
+pygame.mixer.init()
+start_round_sound = pygame.mixer.Sound("begin.wav")
+end_round_sound = pygame.mixer.Sound("end.wav")
+
+
 # Инициализация Pygame
 pygame.init()
 
 # Настройки экрана
-WIDTH, HEIGHT = 1200, 800
+WIDTH, HEIGHT = 1600,900
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Ant Arena Visualizer")
 
@@ -36,6 +41,9 @@ PING_INTERVAL = 10  # seconds
 BACKGROUND = (0, 0, 0)
 HEX_LINE_COLOR = (0, 0, 0)
 TEXT_COLOR = (255, 255, 255)
+TEXT_ALLY = (173, 216, 230)   # Светло-голубой (Light Blue)
+TEXT__ENEMY = (255, 182, 193) # Светло-красный (Light Red / Light Pink)
+TEXT_FOOD = (255, 255, 153)   # Светло-жёлтый (Light Yellow)
 COORD_TEXT_COLOR = (255, 255, 0)  # Желтый цвет для координат
 
 # Параметры шестиугольника
@@ -107,12 +115,18 @@ def on_open(ws):
 def on_message(ws, message):
     global game_state
     try:
+        oldTurn = game_state.get('turnNo', 0)
+        first_state = (game_state == None)
         game_state = json.loads(message)
         turn = game_state.get('turnNo', 0)
-        if (turn == 0):
+        if (turn == 0 and oldTurn != 0):
+            end_round_sound.play()
             discovered_hexes.clear()
             discovered_food.clear()
-        if (turn == 1):
+        if (turn == 1 and oldTurn != 1): #Начало раунда
+            start_round_sound.play()
+            center_on_home()
+        if (turn > 0 and first_state):
             center_on_home()
     except json.JSONDecodeError as e:
         print(f"[WebSocket] Error decoding message: {e}")
@@ -277,8 +291,9 @@ def draw_food(surface, center, size, food_type, amount):
         pygame.draw.circle(surface, color, center, int(size * 0.6))
 
     # Отображаем количество
-    amount_text = small_font.render(str(amount), True, TEXT_COLOR)
-    surface.blit(amount_text, (center[0] - 5, center[1] + size * 0.7))
+    if zoom_level > 0.3:
+        amount_text = small_font.render(str(amount), True, TEXT_FOOD)
+        surface.blit(amount_text, (center[0] - 5, center[1] + size * 0.7))
 
 def draw_star(center, size, color):
     points = []
@@ -395,6 +410,19 @@ def draw_game_state():
         pygame.draw.polygon(surface, translucent_color, points)
         screen.blit(surface, (screen_x - size, screen_y - size))
 
+    # Рисуем муравейник
+    for home in game_state.get('home', []):
+        q, r = home['q'], home['r']
+        hex_x = q * BASE_HEX_WIDTH
+        if r % 2 == 1:
+            hex_x += BASE_HEX_WIDTH / 2
+        hex_y = r * BASE_HEX_VERTICAL_SPACING
+
+        screen_x = WIDTH/2 + (hex_x - camera_x) * zoom_level
+        screen_y = HEIGHT/2 + (hex_y - camera_y) * zoom_level
+        
+        pygame.draw.circle(screen, (255, 215, 0), (int(screen_x), int(screen_y)), int(5 * zoom_level))
+
     # Рисуем ресурсы
     for (q, r), food in discovered_food.items():
         food_count += 1
@@ -440,12 +468,16 @@ def draw_game_state():
         num_ants = len(ants)
         radius = BASE_HEX_SIZE * zoom_level * 0.5
 
-        # Позиции для максимум 3 юнитов (в равностороннем треугольнике)
-        positions = [
-            (0, -radius),
-            (-radius * math.cos(math.pi / 6), radius * math.sin(math.pi / 6)),
-            (radius * math.cos(math.pi / 6), radius * math.sin(math.pi / 6))
-        ]
+        # Если муравей один - позиционируем по центру гекса
+        if num_ants == 1:
+            positions = [(0, 0)]  # Центральная позиция
+        else:
+            # Позиции для 2-3 юнитов (в равностороннем треугольнике)
+            positions = [
+                (0, -radius),
+                (-radius * math.cos(math.pi / 6), radius * math.sin(math.pi / 6)),
+                (radius * math.cos(math.pi / 6), radius * math.sin(math.pi / 6))
+            ]
 
         for i, ant in enumerate(ants):
             if i >= 3:
@@ -484,27 +516,18 @@ def draw_game_state():
             draw_ant((cx, cy), BASE_HEX_SIZE * zoom_level * 0.4, ant['type'], ant.get('isEnemy', isEnemy))
 
             # ХП над каждым
-            health_text = small_font.render(str(ant['health']), True, TEXT_COLOR)
-            screen.blit(health_text, (cx - 10, cy - 20))
+            if zoom_level > 0.5:
+                if (isEnemy):
+                    health_text = small_font.render(str(ant['health']), True, TEXT__ENEMY)
+                else:
+                    health_text = small_font.render(str(ant['health']), True, TEXT_ALLY)
+
+                screen.blit(health_text, (cx - 10, cy - 20))
 
             if isEnemy:
                 enemy_ants += 1
             else:
                 my_ants += 1
-                
-    # Рисуем муравейник
-    for home in game_state.get('home', []):
-        q, r = home['q'], home['r']
-        hex_x = q * BASE_HEX_WIDTH
-        if r % 2 == 1:
-            hex_x += BASE_HEX_WIDTH / 2
-        hex_y = r * BASE_HEX_VERTICAL_SPACING
-
-        screen_x = WIDTH/2 + (hex_x - camera_x) * zoom_level
-        screen_y = HEIGHT/2 + (hex_y - camera_y) * zoom_level
-        
-        pygame.draw.circle(screen, (255, 215, 0), (int(screen_x), int(screen_y)), int(5 * zoom_level))
-
     return {
         "turn": turn_number,
         "points": total_points,
@@ -644,6 +667,93 @@ def main():
         coord_text = font.render(f"Hex: {hex_coords[0]}, {hex_coords[1]}", True, COORD_TEXT_COLOR)
         screen.blit(coord_text, (mouse_pos[0] + 10, mouse_pos[1] + 10))
 
+        # Отрисовка обводки гекса под курсором
+        q, r = hex_coords
+        hex_x = q * BASE_HEX_WIDTH
+        if r % 2 == 1:
+            hex_x += BASE_HEX_WIDTH / 2
+        hex_y = r * BASE_HEX_VERTICAL_SPACING
+
+        screen_x = WIDTH/2 + (hex_x - camera_x) * zoom_level
+        screen_y = HEIGHT/2 + (hex_y - camera_y) * zoom_level
+
+        # Рисуем желтую обводку
+        points = [hex_corner((screen_x, screen_y), BASE_HEX_SIZE * zoom_level, i) for i in range(6)]
+        pygame.draw.polygon(screen, (255, 255, 0), points, 1)  # Толщина обводки 3 пикселя
+
+        # Собираем информацию о гексе
+        hex_info = []
+        q, r = hex_coords
+
+        # Информация о типе гекса
+        if (q, r) in discovered_hexes:
+            hex_type = discovered_hexes[(q, r)]
+            type_names = {
+                HEX_HOME: "Муравейник",
+                HEX_EMPTY: "Пусто",
+                HEX_DIRT: "Земля",
+                HEX_ACID: "Кислота",
+                HEX_ROCKS: "Камни"
+            }
+            hex_info.append(f"Тип: {type_names.get(hex_type, 'Неизвестно')}")
+
+        # Информация о еде
+        if (q, r) in discovered_food:
+            food = discovered_food[(q, r)]
+            food_names = {
+                FOOD_APPLE: "Яблоко",
+                FOOD_BREAD: "Хлеб",
+                FOOD_NECTAR: "Нектар"
+            }
+            hex_info.append(f"Еда: {food_names.get(food['type'], 'Неизвестно')} ({food['amount']})")
+
+        # Информация о юнитах
+        if game_state:
+            ants_on_hex = []
+            for ant in game_state.get('ants', []):
+                if ant['q'] == q and ant['r'] == r:
+                    ant_type_names = {
+                        ANT_TYPE_WORKER: "Рабочий",
+                        ANT_TYPE_FIGHTER: "Воин",
+                        ANT_TYPE_SCOUT: "Разведчик"
+                    }
+                    side = "Враг" if ant.get('isEnemy') else ""
+                    ants_on_hex.append(f"{side} {ant_type_names.get(ant['type'], 'Неизвестно')} (HP: {ant['health']}) ID: {ant.get('id', '?')}")
+            
+            if ants_on_hex:
+                hex_info.append("Юниты:")
+                hex_info.extend(ants_on_hex)
+
+        # Отображаем информацию о гексе
+        # Отображаем информацию о гексе
+        if hex_info:
+            title = font.render(f"Гекс ({q}, {r})", True, (255, 255, 0))
+            title_height = title.get_height()
+            line_height = title_height  # Все строки тем же шрифтом
+
+            padding = 5
+            info_height = padding + title_height + padding + len(hex_info) * line_height + padding
+            info_surface = pygame.Surface((350, info_height), pygame.SRCALPHA)
+            info_surface.fill((0, 0, 0, 180))  # Полупрозрачный фон
+
+            # Заголовок
+            info_surface.blit(title, (10, padding))
+
+            # Основная информация — тем же шрифтом
+            for i, line in enumerate(hex_info):
+                text = font.render(line, True, (255, 255, 255))
+                info_surface.blit(text, (10, padding + title_height + padding + i * line_height))
+
+            # Позиционирование
+            info_x = mouse_pos[0] + 20
+            info_y = mouse_pos[1]
+
+            if info_x + info_surface.get_width() > WIDTH:
+                info_x = mouse_pos[0] - info_surface.get_width() - 20
+            if info_y + info_surface.get_height() > HEIGHT:
+                info_y = HEIGHT - info_surface.get_height()
+
+            screen.blit(info_surface, (info_x, info_y))
         # Отображение параметров камеры
         camera_text = font.render(f"Камера: ({camera_x:.1f}, {camera_y:.1f}) Масштаб: {zoom_level:.2f}x", True, TEXT_COLOR)
         screen.blit(camera_text, (10, HEIGHT - 30))
