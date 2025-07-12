@@ -17,16 +17,26 @@ public class Strategizer
             {
                 _combat.Scouts[ant.Id] = ant;
             }
+            if (_combat.Workers.ContainsKey(ant.Id))
+            {
+                _combat.Workers[ant.Id] = ant;
+            }
         }
 
-        List<string> _antsToRemove = new List<string>();
-        foreach (var ant in _combat.UnassignedAnts)
+        List<string> antsToRemove = new List<string>();
+        foreach (var ant in _combat.UnassignedAnts.Where(x => x.Value.Type != Net.Models.AntType.Worker)) 
         {
             _combat.Scouts.Add(ant.Key, ant.Value);
-            _antsToRemove.Add(ant.Key);
+            antsToRemove.Add(ant.Key);
+        }
+        
+        foreach (var ant in _combat.UnassignedAnts.Where(x => x.Value.Type == Net.Models.AntType.Worker)) 
+        {
+            _combat.Workers.Add(ant.Key, ant.Value);
+            antsToRemove.Add(ant.Key);
         }
 
-        foreach (var removeId in _antsToRemove)
+        foreach (var removeId in antsToRemove)
         {
             _combat.UnassignedAnts.Remove(removeId);
         }

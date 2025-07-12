@@ -1,0 +1,183 @@
+﻿using Server.Net.Models;
+
+namespace Server.Combat;
+
+public class WorkerLogic
+{
+    private Combat _combat;
+    private Dictionary<string, WorkerState> _workerStates = new Dictionary<string, WorkerState>();
+    private Dictionary<string, HexCellHash> _workerTargets = new Dictionary<string, HexCellHash>();
+    private AstarPathfinder _pathfinder;
+
+    public WorkerLogic(Combat combat)
+    {
+        _combat = combat;
+        _pathfinder = new AstarPathfinder(10000);
+    }
+
+    public void AssignWorkerTasks()
+    {
+        // Проверяем состояние всех рабочих
+        foreach (var worker in _combat.Workers)
+        {
+            if (!_workerStates.ContainsKey(worker.Key))
+            {
+                _workerStates[worker.Key] = WorkerState.SearchingFood;
+            }
+
+            var ant = worker.Value;
+            var currentPos = new HexCellHash(ant.Q, ant.R);
+            
+            // Обновляем состояние в зависимости от текущей ситуации
+            UpdateWorkerState(worker.Key, ant, currentPos);
+        }
+    }
+
+    private void UpdateWorkerState(string workerId, Ant ant, HexCellHash currentPos)
+    {
+        var state = _workerStates[workerId];
+        
+        switch (state)
+        {
+            case WorkerState.SearchingFood:
+                // Если муравей несет еду, переходим к возвращению домой
+                if (ant.Food.Amount > 0)
+                {
+                    _workerStates[workerId] = WorkerState.ReturningHome;
+                    _workerTargets[workerId] = _combat.HomeCells[0]; // Идем к базе
+                }
+                else
+                {
+                    // Ищем ближайшую еду
+                    FindNearestFood(workerId, currentPos);
+                }
+                break;
+                
+            case WorkerState.MovingToFood:
+                // Проверяем, достигли ли мы цели
+                if (_workerTargets.ContainsKey(workerId) && currentPos == _workerTargets[workerId])
+                {
+                    _workerStates[workerId] = WorkerState.CollectingFood;
+                }
+                // Проверяем, все ли еще есть еда на целевой позиции
+                else if (_workerTargets.ContainsKey(workerId))
+                {
+                    var targetPos = _workerTargets[workerId];
+                    bool foodStillExists = _combat.CurrentGameState.Food.Any(f => 
+                        new HexCellHash(f.Q, f.R) == targetPos);
+                    
+                    if (!foodStillExists)
+                    {
+                        // Еда исчезла, ищем новую
+                        _workerStates[workerId] = WorkerState.SearchingFood;
+                        _workerTargets.Remove(workerId);
+                    }
+                }
+                break;
+                
+            case WorkerState.CollectingFood:
+                // После сбора еды возвращаемся домой
+                if (ant.Food.Amount > 0)
+                {
+                    _workerStates[workerId] = WorkerState.ReturningHome;
+                    _workerTargets[workerId] = _combat.HomeCells[0];
+                }
+                break;
+                
+            case WorkerState.ReturningHome:
+                // Если достигли базы, начинаем поиск новой еды
+                if (_combat.HomeCells.Contains(currentPos))
+                {
+                    _workerStates[workerId] = WorkerState.SearchingFood;
+                    _workerTargets.Remove(workerId);
+                }
+                break;
+        }
+    }
+
+    private void FindNearestFood(string workerId, HexCellHash currentPos)
+    {
+        FoodOnMap? nearestFood = null;
+        float minDistance = float.MaxValue;
+
+        foreach (var food in _combat.CurrentGameState.Food)
+        {
+            var foodPos = new HexCellHash(food.Q, food.R);
+            float distance = HexGridHelper.ManhattanDistance(currentPos, foodPos);
+            
+            // Проверяем, не занята ли уже эта еда другим рабочим
+            bool isTargeted = _workerTargets.Values.Contains(foodPos);
+            
+            if (distance < minDistance && !isTargeted)
+            {
+                minDistance = distance;
+                nearestFood = food;
+            }
+        }
+
+        if (nearestFood != null)
+        {
+            _workerStates[workerId] = WorkerState.MovingToFood;
+            _workerTargets[workerId] = new HexCellHash(nearestFood.Q, nearestFood.R);
+        }
+    }
+
+    public List<Move> GetWorkerMoves()
+    {
+        List<Move> moves = new List<Move>();
+
+        foreach (var worker in _combat.Workers)
+        {
+            var ant = worker.Value;
+            var currentPos = new HexCellHash(ant.Q, ant.R);
+            var state = _workerStates[worker.Key];
+
+            // Если рабочий собирает еду, он должен стоять на месте
+            if (state == WorkerState.CollectingFood)
+            {
+                // Создаем пустой ход (стоим на месте)
+                Move move = new Move
+                {
+                    Ant = ant.Id,
+                    Path = new List<Coordinate>()
+                };
+                moves.Add(move);
+                continue;
+            }
+
+            // Если есть цель, строим путь к ней
+            if (_workerTargets.ContainsKey(worker.Key))
+            {
+                var targetPos = _workerTargets[worker.Key];
+                var calculatedPath = _pathfinder.Pathfind(_combat.MemorizedFields.Field, currentPos, targetPos);
+
+                if (calculatedPath != null && calculatedPath.Count > 1)
+                {
+                    Move move = new Move();
+                    var antStats = Encyclopedia.GetAntStatsByType(ant.Type);
+                    var maxSteps = Math.Min(calculatedPath.Count - 1, antStats.Speed);
+                    List<Coordinate> path = new List<Coordinate>();
+
+                    for (int i = 0; i < maxSteps; i++)
+                    {
+                        path.Add(calculatedPath[calculatedPath.Count - 2 - i].ToCoordinate());
+                    }
+
+                    move.Path = path;
+                    move.Ant = ant.Id;
+                    moves.Add(move);
+                }
+            }
+        }
+
+        return moves;
+    }
+}
+
+public enum WorkerState
+{
+    SearchingFood,
+    MovingToFood,
+    CollectingFood,
+    ReturningHome
+}

@@ -11,6 +11,7 @@ public class Combat
     private HashSet<HexCellHash> _hexVisibleThisTick = new HashSet<HexCellHash>();
 
     private Dictionary<string, Ant> _scouts = new Dictionary<string, Ant>();
+    private Dictionary<string, Ant> _workers = new Dictionary<string, Ant>();
 
     private Dictionary<string, Ant> _unassignedAnts = new Dictionary<string, Ant>();
 
@@ -24,6 +25,7 @@ public class Combat
     public GameState CurrentGameState => _currentGameState;
 
     public Dictionary<string, Ant> Scouts => _scouts;
+    public Dictionary<string, Ant> Workers => _workers;
 
     public Dictionary<string, Ant> UnassignedAnts => _unassignedAnts;
 
@@ -31,6 +33,7 @@ public class Combat
     private Strategizer _strategizer;
 
     private ScoutingLogic _scoutingLogic;
+    private WorkerLogic _workerLogic;
 
     public MovesRequest Tick(GameState gameState)
     {
@@ -43,6 +46,7 @@ public class Combat
 
             _strategizer = new Strategizer(this);
             _scoutingLogic = new ScoutingLogic(this);
+            _workerLogic = new WorkerLogic(this);
         }
 
 
@@ -59,10 +63,13 @@ public class Combat
 
         _strategizer.Strategize();
 
-        _scoutingLogic.AssignScoutPoints();
+        //_scoutingLogic.AssignScoutPoints();
+        _workerLogic.AssignWorkerTasks();
+
 
         List<Move> moves = new List<Move>();
-        moves.AddRange(_scoutingLogic.Scout());
+        //moves.AddRange(_scoutingLogic.Scout());
+        moves.AddRange(_workerLogic.GetWorkerMoves());
 
         //List<Move> moves = new List<Move>();
         //for (int i = 0; i < gameState.Ants.Count; i++)
@@ -117,7 +124,7 @@ public class Combat
                 }
             }
 
-            if (!_scouts.ContainsKey(ant.Id))
+            if (!_scouts.ContainsKey(ant.Id) && !_workers.ContainsKey(ant.Id))
             {
                 _unassignedAnts.Add(ant.Id, ant);
             }
