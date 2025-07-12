@@ -12,7 +12,7 @@ var taskCycle = Task.Run(async () =>
     {
         try
         {
-            manager.Cycle();
+            await manager.Cycle();
         }
         catch (Exception ex)
         {

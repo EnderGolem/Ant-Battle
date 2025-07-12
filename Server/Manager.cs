@@ -16,7 +16,7 @@ internal class Manager
         _socketManager = socketManager;
     }
 
-    public async void Cycle()
+    public async Task Cycle()
     {
         try
         {

@@ -40,5 +40,34 @@ public class Strategizer
         {
             _combat.UnassignedAnts.Remove(removeId);
         }
+    }   
+    
+    
+    //Всех кто ничего не делаем то всех в разведчиков
+    public void PostStrategize()
+    {
+        foreach (var ant in _combat.CurrentGameState.Ants)
+        {
+            if (_combat.Scouts.ContainsKey(ant.Id))
+            {
+                _combat.Scouts[ant.Id] = ant;
+            }
+            if (_combat.Workers.ContainsKey(ant.Id))
+            {
+                _combat.Workers[ant.Id] = ant;
+            }
+        }
+
+        List<string> antsToRemove = new List<string>();
+        foreach (var ant in _combat.UnassignedAnts) 
+        {
+            _combat.Scouts.Add(ant.Key, ant.Value);
+            antsToRemove.Add(ant.Key);
+        }
+
+        foreach (var removeId in antsToRemove)
+        {
+            _combat.UnassignedAnts.Remove(removeId);
+        }
     }
 }
