@@ -15,7 +15,7 @@ public class Combat
     private Dictionary<string, Ant> _unassignedAnts = new Dictionary<string, Ant>();
 
     private GameState _currentGameState;
-    public CombatField CombatField => _combatField;
+    public CombatField MemorizedFields => _combatField;
 
     public List<HexCellHash> HomeCells => _homeCells;
 
