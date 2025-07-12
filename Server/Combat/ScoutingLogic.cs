@@ -72,6 +72,8 @@ public class ScoutingLogic
     public List<Move> Scout()
     {
         ConcurrentBag<Move> res = new ConcurrentBag<Move>();
+        ConcurrentBag<string> scoutCommandsToRemove = new ConcurrentBag<string>();
+
 
         Parallel.ForEach(_scoutCommands, command =>
         {
@@ -100,8 +102,21 @@ public class ScoutingLogic
                 move.Ant = ant.Id;
                 res.Add(move);
             }
+            else
+            {
+                scoutCommandsToRemove.Add(command.Key);
+            }
 
         });
+
+        foreach (var command in scoutCommandsToRemove)
+        {
+            if (_pointsToScout.Contains(_scoutCommands[command]))
+            {
+                _pointsToScout.Remove(_scoutCommands[command]);
+                _scoutCommands.Remove(command);
+            }
+        }
 
         return res.ToList();
     }
