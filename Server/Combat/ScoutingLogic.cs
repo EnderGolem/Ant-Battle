@@ -105,6 +105,11 @@ public class ScoutingLogic
 
     public float EstimateCostForPoint(HexCellHash point, HexCell cell, HexCellHash currentPosition)
     {
+        if (cell.Type == HexType.EndOfMap)
+        {
+            return -100000;
+        }
+
         if (cell.Type != HexType.Fake)
         {
             return -100;

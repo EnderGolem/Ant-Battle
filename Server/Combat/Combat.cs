@@ -112,22 +112,28 @@ public class Combat
         {
             var stats = Encyclopedia.GetAntStatsByType(ant.Type);
             var pos = HexCellHash.FromCoordinate(new Coordinate(){Q = ant.Q, R = ant.R});
-
-            var cellsToFake = HexGridHelper.GetAllCellsInRadius(pos, stats.Speed);
-
-            foreach (var hash in cellsToFake)
-            {
-                _combatField.AddFakeCell(hash, Encyclopedia.CreateHexCellFromType(HexType.Fake));
-            }
+            
 
             var hexShouldBeVisible =
                 HexGridHelper.GetAllCellsInRadius(HexCellHash.FromCoordinate(new Coordinate(){Q = ant.Q, R = ant.R}), stats.Sight);
 
+            bool endOfMapIsClose = false;
             foreach (var hex in hexShouldBeVisible)
             {
                 if (!_hexVisibleThisTick.Contains(hex))
                 {
+                    endOfMapIsClose = true;
                     _combatField.Field[hex].SetType(HexType.EndOfMap);
+                }
+            }
+
+            if (endOfMapIsClose)
+            {
+                var cellsToFake = HexGridHelper.GetAllCellsInRadius(pos, stats.Speed + 3);
+
+                foreach (var hash in cellsToFake)
+                {
+                    _combatField.AddFakeCell(hash, Encyclopedia.CreateHexCellFromType(HexType.Fake));
                 }
             }
 
