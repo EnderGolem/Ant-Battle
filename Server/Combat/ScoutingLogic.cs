@@ -68,8 +68,14 @@ public class ScoutingLogic
         foreach (var command in _scoutCommands)
         {
             var ant = _combat.Scouts[command.Key];
-            
-            var calculatedPath = _pathfinder.Pathfind(_combat.MemorizedFields.Field, new HexCellHash(ant.Q, ant.R), command.Value);
+
+            if (_combat.CellsOccupiedByAnts.TryGetValue(ant.Type, out var set))
+            {
+                set.Remove(new HexCellHash(ant.Q, ant.R));
+            }
+
+            var calculatedPath = _pathfinder.Pathfind(
+                _combat.MemorizedFields.Field, _combat.CellsOccupiedByAnts,ant.Type,new HexCellHash(ant.Q, ant.R), command.Value);
 
             if (calculatedPath != null && calculatedPath.Count > 0)
             {
@@ -84,6 +90,11 @@ public class ScoutingLogic
 
                 move.Path = list;
                 move.Ant = ant.Id;
+                if (_combat.CellsOccupiedByAnts.TryGetValue(ant.Type, out var st))
+                {
+                    st.Add(calculatedPath[calculatedPath.Count - 2 - (length -1)]);
+                }
+                
                 res.Add(move);
             }
 

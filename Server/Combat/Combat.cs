@@ -15,6 +15,9 @@ public class Combat
 
     private Dictionary<string, Ant> _unassignedAnts = new Dictionary<string, Ant>();
 
+    private Dictionary<AntType, HashSet<HexCellHash>> _cellsOccupiedByAnts =
+        new Dictionary<AntType, HashSet<HexCellHash>>(); 
+
     private GameState _currentGameState;
     public CombatField MemorizedFields => _combatField;
 
@@ -28,6 +31,8 @@ public class Combat
     public Dictionary<string, Ant> Workers => _workers;
 
     public Dictionary<string, Ant> UnassignedAnts => _unassignedAnts;
+
+    public Dictionary<AntType, HashSet<HexCellHash>> CellsOccupiedByAnts => _cellsOccupiedByAnts;
 
 
     private Strategizer _strategizer;
@@ -53,6 +58,7 @@ public class Combat
         _currentGameState = gameState;
         var input = new MovesRequest();
         _hexVisibleThisTick.Clear();
+        _cellsOccupiedByAnts.Clear();
 
 
         CheckingMap(gameState);
@@ -105,8 +111,9 @@ public class Combat
         foreach (var ant in gameState.Ants)
         {
             var stats = Encyclopedia.GetAntStatsByType(ant.Type);
+            var pos = new HexCellHash(ant.Q, ant.R);
 
-            var cellsToFake = HexGridHelper.GetAllCellsInRadius(new HexCellHash(ant.Q, ant.R), stats.Speed);
+            var cellsToFake = HexGridHelper.GetAllCellsInRadius(pos, stats.Speed);
 
             foreach (var hash in cellsToFake)
             {
@@ -127,6 +134,17 @@ public class Combat
             if (!_scouts.ContainsKey(ant.Id) && !_workers.ContainsKey(ant.Id))
             {
                 _unassignedAnts.Add(ant.Id, ant);
+            }
+
+            if (_cellsOccupiedByAnts.TryGetValue(stats.Type, out var set))
+            {
+                set.Add(pos);
+            }
+            else
+            {
+                HashSet<HexCellHash> newSet = new HashSet<HexCellHash>();
+                newSet.Add(pos);
+                _cellsOccupiedByAnts[stats.Type] = newSet;
             }
         }
     }
