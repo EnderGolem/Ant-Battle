@@ -36,7 +36,7 @@ public class ScoutingLogic
         {
             _scoutCommands.Remove(cmd);
         }
-        
+
         foreach (var scout in _combat.Scouts)
         {
             if (!_scoutCommands.ContainsKey(scout.Key))
@@ -48,9 +48,9 @@ public class ScoutingLogic
                     // Пропускаем точки, которые уже назначены другим разведчикам
                     if (_pointsToScout.Contains(hex.Key))
                         continue;
-                        
-                    var cost = EstimateCostForPoint(hex.Key, hex.Value, 
-                        HexCellHash.FromCoordinate(new Coordinate{Q = scout.Value.Q, R = scout.Value.R}), scout.Value.Type);
+
+                    var cost = EstimateCostForPoint(hex.Key, hex.Value,
+                        HexCellHash.FromCoordinate(new Coordinate { Q = scout.Value.Q, R = scout.Value.R }), scout.Value.Type);
                     if (cost > maxCost)
                     {
                         maxCost = cost;
@@ -65,8 +65,8 @@ public class ScoutingLogic
                 }
             }
         }
-        
-        
+
+
     }
 
     public List<Move> Scout()
@@ -126,9 +126,9 @@ public class ScoutingLogic
         {
             return -1000;
         }*/
-        
+
         float cost = 0;
-        
+
         // Базовый приоритет для неизученных клеток
         cost += 1000;
 
@@ -161,7 +161,7 @@ public class ScoutingLogic
 
         // Бонус за количество неизученных клеток рядом
         int closeUndiscoveredPoints = 0;
-        foreach (var nearPoint in HexGridHelper.GetAllCellsInRadius(point,3))
+        foreach (var nearPoint in HexGridHelper.GetAllCellsInRadius(point, 3))
         {
             if (_combat.MemorizedFields.Field.TryGetValue(nearPoint, out var c))
             {
