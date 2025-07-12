@@ -9,4 +9,9 @@ public class Coordinate
 
     [JsonProperty("r")]
     public int R { get; set; }
+
+    public bool Equals(Coordinate other)
+    {
+        return (other.Q == Q) && (other.R == R);
+    }
 }

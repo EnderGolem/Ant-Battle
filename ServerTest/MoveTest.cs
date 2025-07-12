@@ -54,4 +54,23 @@ public class MoveTest
         var result = combat.Tick(stat);
     }
 
+    [Test]
+    public void TestConversionToAxial()
+    {
+        Assert.IsTrue(HexCellHash.FromCoordinate(new Coordinate(){Q = -2, R = -2}) == new HexCellHash(-1,-2));
+        Assert.IsTrue(HexCellHash.FromCoordinate(new Coordinate(){Q = -2, R = -1}) == new HexCellHash(-1,-1));
+        Assert.IsTrue(HexCellHash.FromCoordinate(new Coordinate(){Q = 1, R = 0}) == new HexCellHash(1,0));
+        Assert.IsTrue(HexCellHash.FromCoordinate(new Coordinate(){Q = -1, R = -2}) == new HexCellHash(0,-2));
+    }
+    
+    [Test]
+    public void TestConversionFromAxial()
+    {
+        Assert.IsTrue(new HexCellHash(-1, -2).ToCoordinate().Equals(new Coordinate(){Q = -2, R = -2}));
+        Assert.IsTrue(new HexCellHash(-1, -1).ToCoordinate().Equals(new Coordinate(){Q = -2, R = -1}));
+        Assert.IsTrue(new HexCellHash(1, 0).ToCoordinate().Equals(new Coordinate(){Q = 1, R = 0}));
+        Assert.IsTrue(new HexCellHash(0, -2).ToCoordinate().Equals(new Coordinate(){Q = -1, R = -2}));
+        
+    }
+
 }
