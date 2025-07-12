@@ -71,11 +71,11 @@ public class ScoutingLogic
 
             if (_combat.CellsOccupiedByAnts.TryGetValue(ant.Type, out var set))
             {
-                set.Remove(new HexCellHash(ant.Q, ant.R));
+                set.Remove(HexCellHash.FromCoordinate(new Coordinate(){Q = ant.Q, R = ant.R}));
             }
 
             var calculatedPath = _pathfinder.Pathfind(
-                _combat.MemorizedFields.Field, _combat.CellsOccupiedByAnts,ant.Type,new HexCellHash(ant.Q, ant.R), command.Value);
+                _combat.MemorizedFields.Field, _combat.CellsOccupiedByAnts,ant.Type,HexCellHash.FromCoordinate(new Coordinate(){Q = ant.Q, R = ant.R}), command.Value);
 
             if (calculatedPath != null && calculatedPath.Count > 0)
             {

@@ -111,7 +111,7 @@ public class Combat
         foreach (var ant in gameState.Ants)
         {
             var stats = Encyclopedia.GetAntStatsByType(ant.Type);
-            var pos = new HexCellHash(ant.Q, ant.R);
+            var pos = HexCellHash.FromCoordinate(new Coordinate(){Q = ant.Q, R = ant.R});
 
             var cellsToFake = HexGridHelper.GetAllCellsInRadius(pos, stats.Speed);
 
@@ -121,7 +121,7 @@ public class Combat
             }
 
             var hexShouldBeVisible =
-                HexGridHelper.GetAllCellsInRadius(new HexCellHash(ant.Q, ant.R), stats.Sight);
+                HexGridHelper.GetAllCellsInRadius(HexCellHash.FromCoordinate(new Coordinate(){Q = ant.Q, R = ant.R}), stats.Sight);
 
             foreach (var hex in hexShouldBeVisible)
             {
@@ -153,7 +153,7 @@ public class Combat
     {
         foreach (var tile in gameState.Map)
         {
-            var hash = new HexCellHash(tile.Q, tile.R);
+            var hash = HexCellHash.FromCoordinate(new Coordinate() { Q = tile.Q, R = tile.R });
             var hexCell = Encyclopedia.CreateHexCellFromType((HexType)tile.Type);
             if (hexCell.Type == HexType.Base)
             {

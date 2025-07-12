@@ -26,7 +26,7 @@ public class WorkerLogic
             }
 
             var ant = worker.Value;
-            var currentPos = new HexCellHash(ant.Q, ant.R);
+            var currentPos = HexCellHash.FromCoordinate(new Coordinate(){Q = ant.Q, R = ant.R});
             
             // Обновляем состояние в зависимости от текущей ситуации
             UpdateWorkerState(worker.Key, ant, currentPos);
@@ -64,7 +64,7 @@ public class WorkerLogic
                 {
                     var targetPos = _workerTargets[workerId];
                     bool foodStillExists = _combat.CurrentGameState.Food.Any(f => 
-                        new HexCellHash(f.Q, f.R) == targetPos);
+                        HexCellHash.FromCoordinate(new Coordinate(){Q = f.Q, R = f.R}) == targetPos);
                     
                     if (!foodStillExists)
                     {
@@ -102,7 +102,7 @@ public class WorkerLogic
 
         foreach (var food in _combat.CurrentGameState.Food)
         {
-            var foodPos = new HexCellHash(food.Q, food.R);
+            var foodPos = HexCellHash.FromCoordinate(new Coordinate(){Q = food.Q, R = food.R});
             float distance = HexGridHelper.ManhattanDistance(currentPos, foodPos);
             
             // Проверяем, не занята ли уже эта еда другим рабочим
@@ -118,7 +118,7 @@ public class WorkerLogic
         if (nearestFood != null)
         {
             _workerStates[workerId] = WorkerState.MovingToFood;
-            _workerTargets[workerId] = new HexCellHash(nearestFood.Q, nearestFood.R);
+            _workerTargets[workerId] = HexCellHash.FromCoordinate(new Coordinate(){Q = nearestFood.Q, R = nearestFood.R});
         }
     }
 

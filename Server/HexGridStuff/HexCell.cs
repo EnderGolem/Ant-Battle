@@ -112,12 +112,18 @@ public struct HexCellHash
 
     public Coordinate ToCoordinate()
     {
-        return new Coordinate { Q = q, R = r };
+        var parity = r & 1;
+        var col = q + (r - parity)/2;
+        var row = r;
+        return new Coordinate { Q = col, R = row };
     }
 
     public static HexCellHash FromCoordinate(Coordinate coordinate)
     {
-        return new HexCellHash(coordinate.Q, coordinate.R);
+        var parity = coordinate.R & 1;
+        var q = coordinate.Q - (coordinate.R - parity) / 2;
+        var r = coordinate.R;
+        return new HexCellHash(q, r);
     }
 
 }
