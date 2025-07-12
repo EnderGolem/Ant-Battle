@@ -107,7 +107,8 @@ public struct HexCellHash
 
     public override string ToString()
     {
-        return $"({q},{r},{-q-r})";
+        var cord = ToCoordinate();
+        return $"({q},{r},{-q-r}) ({cord.Q},{cord.R})";
     }
 
     public Coordinate ToCoordinate()
