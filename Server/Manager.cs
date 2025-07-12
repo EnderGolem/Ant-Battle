@@ -1,4 +1,5 @@
 ﻿using Server.Net;
+using Server.Net.Models;
 using Newtonsoft.Json;
 using Server.Socket;
 
@@ -10,6 +11,9 @@ internal class Manager
     private readonly SocketManager _socketManager;
 
     private Combat.Combat _combat;
+    private MovesRequest _forcedMoves = null; // Принудительные ходы
+    
+    public Combat.Combat Combat => _combat; // Добавляем публичный доступ к Combat
     public Manager(SocketManager socketManager)
     {
         _api = new RestApi();
@@ -34,9 +38,19 @@ internal class Manager
             // Отправляем JSON данные игры через WebSocket
             _socketManager.BroadcastGameState(jsonGameState);
 
-
-
-            var input = _combat.Tick(game);
+            MovesRequest input;
+            
+            // Проверяем, есть ли принудительные ходы
+            if (_forcedMoves != null)
+            {
+                Console.WriteLine("Выполняем принудительные ходы...");
+                input = _forcedMoves;
+                _forcedMoves = null; // Сбрасываем принудительные ходы после использования
+            }
+            else
+            {
+                input = _combat.Tick(game);
+            }
 
             var json = JsonConvert.SerializeObject(input);
             string truncated = json.Length <= 20
@@ -54,5 +68,14 @@ internal class Manager
             return;
         }
 
+    }
+
+    /// <summary>
+    /// Устанавливает принудительные ходы для следующего тика
+    /// </summary>
+    /// <param name="forcedMoves">Принудительные ходы</param>
+    public void SetForcedMoves(MovesRequest forcedMoves)
+    {
+        _forcedMoves = forcedMoves;
     }
 }
