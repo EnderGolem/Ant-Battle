@@ -131,11 +131,11 @@ public class WorkerLogic
         }
 
         //ЗАГЛУШКА возможно стоит заменить
-        //if(nearestFood == null)
-        //{
-        //    _workerStates[workerId] = WorkerState.SearchingFood;
-        //    _workerTargets[workerId] = currentPos + HexCellHash.RightUp();
-        //}
+        if (nearestFood == null)
+        {
+            _workerStates[workerId] = WorkerState.SearchingFood;
+            _workerTargets[workerId] = currentPos + HexCellHash.RightUp();
+        }
     }
 
     public List<Move> GetWorkerMoves()
