@@ -403,7 +403,7 @@ def draw_game_state():
     my_ants = 0
     enemy_ants = 0
     visible_cells = len(game_state.get('map', []))
-    total_points = game_state.get('points', 0)
+    total_points = game_state.get('score', 0)
     turn_number = game_state.get('turnNo', 0)
 
     # Рисуем гексы
