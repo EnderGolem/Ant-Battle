@@ -9,6 +9,7 @@ import sys
 from collections import defaultdict
 
 discovered_hexes = {}  # ключ (q, r): hex_type
+discovered_food = {}  # ключ: (q, r) -> словарь с type и amount
 
 # Инициализация Pygame
 pygame.init()
@@ -313,6 +314,17 @@ def draw_game_state():
         
     visible_coords = {(cell['q'], cell['r']) for cell in game_state.get('map', [])}
 
+    current_visible_food = {}
+    for food in game_state.get('food', []):
+        coord = (food['q'], food['r'])
+        current_visible_food[coord] = food
+        discovered_food[coord] = food  # сохраняем/обновляем
+
+    # Удаляем еду из тех клеток, которые видимы, но еды больше нет
+    for coord in list(discovered_food.keys()):
+        if coord in visible_coords and coord not in current_visible_food:
+            del discovered_food[coord]
+
     for (q, r), hex_type in discovered_hexes.items():
         if (q, r) in visible_coords:
             continue
@@ -340,10 +352,9 @@ def draw_game_state():
         screen.blit(surface, (screen_x - size, screen_y - size))
 
     # Рисуем ресурсы
-    for food in game_state.get('food', []):
+    for (q, r), food in discovered_food.items():
         food_count += 1
 
-        q, r = food['q'], food['r']
         hex_x = q * BASE_HEX_WIDTH
         if r % 2 == 1:
             hex_x += BASE_HEX_WIDTH / 2
@@ -351,9 +362,18 @@ def draw_game_state():
 
         screen_x = WIDTH/2 + (hex_x - camera_x) * zoom_level
         screen_y = HEIGHT/2 + (hex_y - camera_y) * zoom_level
-        
-        draw_food((screen_x, screen_y), BASE_HEX_SIZE * zoom_level, 
-                 food['type'], food['amount'])
+
+        # Полупрозрачность для скрытой еды
+        visible = (q, r) in visible_coords
+        if visible:
+            draw_food((screen_x, screen_y), BASE_HEX_SIZE * zoom_level, food['type'], food['amount'])
+        else:
+            # Рисуем на полупрозрачной поверхности
+            surface = pygame.Surface((BASE_HEX_SIZE * 2 * zoom_level, BASE_HEX_SIZE * 2 * zoom_level), pygame.SRCALPHA)
+            center = (BASE_HEX_SIZE * zoom_level, BASE_HEX_SIZE * zoom_level)
+            draw_food(center, BASE_HEX_SIZE * zoom_level, food['type'], food['amount'])
+            surface.set_alpha(80)  # прозрачность
+            screen.blit(surface, (screen_x - center[0], screen_y - center[1]))
 
     # Рисуем муравьев
     ants_by_hex = defaultdict(list)
@@ -506,6 +526,7 @@ def main():
                     center_on_home()
                 elif event.key == pygame.K_n:
                     discovered_hexes.clear()
+                    discovered_food.clear()
                     print("Обнаруженные клетки сброшены.")
 
         # Клавиши
@@ -528,20 +549,6 @@ def main():
                 r_was_pressed = True
         else:
             r_was_pressed = False
-
-        # Отрисовка состояния подключения
-        if connection_failed:
-            conn_status = "ОТКЛЮЧЕНО ('R' - повторить попытку)"
-            conn_color = (255, 0, 0)
-        elif ws and ws.sock and ws.sock.connected:
-            conn_status = "ПОДКЛЮЧЕНО"
-            conn_color = (0, 255, 0)
-        else:
-            conn_status = "ПОДКЛЮЧЕНИЕ..."
-            conn_color = (255, 165, 0)
-
-        conn_text = font.render(f"Сервер: {conn_status}", True, conn_color)
-        screen.blit(conn_text, (10, 10))
 
         # Отрисовка состояния игры
         if game_state:
@@ -571,6 +578,20 @@ def main():
         # Отображение параметров камеры
         camera_text = font.render(f"Камера: ({camera_x:.1f}, {camera_y:.1f}) Масштаб: {zoom_level:.2f}x", True, TEXT_COLOR)
         screen.blit(camera_text, (10, HEIGHT - 30))
+
+        # Отрисовка состояния подключения
+        if connection_failed:
+            conn_status = "ОТКЛЮЧЕНО ('R' - повторить попытку)"
+            conn_color = (255, 0, 0)
+        elif ws and ws.sock and ws.sock.connected:
+            conn_status = "ПОДКЛЮЧЕНО"
+            conn_color = (0, 255, 0)
+        else:
+            conn_status = "ПОДКЛЮЧЕНИЕ..."
+            conn_color = (255, 165, 0)
+
+        conn_text = font.render(f"Сервер: {conn_status}", True, conn_color)
+        screen.blit(conn_text, (10, 10))
 
         pygame.display.flip()
         clock.tick(60)
