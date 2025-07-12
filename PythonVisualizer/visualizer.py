@@ -8,6 +8,8 @@ import signal
 import sys
 from collections import defaultdict
 
+discovered_hexes = {}  # ключ (q, r): hex_type
+
 # Инициализация Pygame
 pygame.init()
 
@@ -69,11 +71,6 @@ FOOD_BREAD = 2
 FOOD_NECTAR = 3
 
 # Цвета
-ANT_COLORS = {
-    ANT_TYPE_SCOUT: (0, 191, 255),
-    ANT_TYPE_FIGHTER: (255, 69, 0),
-    ANT_TYPE_WORKER: (50, 205, 50)
-}
 
 HEX_COLORS = {
     HEX_HOME: (139, 69, 19),
@@ -301,6 +298,7 @@ def draw_game_state():
     for hex_data in game_state.get('map', []):
         q, r = hex_data['q'], hex_data['r']
         hex_type = hex_data['type']
+        discovered_hexes[(q, r)] = hex_type
         
         hex_x = q * BASE_HEX_WIDTH
         if r % 2 == 1:
@@ -312,6 +310,34 @@ def draw_game_state():
         
         draw_hexagon((screen_x, screen_y), BASE_HEX_SIZE * zoom_level, 
                     HEX_COLORS.get(hex_type, (50, 50, 150)), HEX_LINE_COLOR)
+        
+    visible_coords = {(cell['q'], cell['r']) for cell in game_state.get('map', [])}
+
+    for (q, r), hex_type in discovered_hexes.items():
+        if (q, r) in visible_coords:
+            continue
+        hex_x = q * BASE_HEX_WIDTH
+        if r % 2 == 1:
+            hex_x += BASE_HEX_WIDTH / 2
+        hex_y = r * BASE_HEX_VERTICAL_SPACING
+
+        screen_x = WIDTH/2 + (hex_x - camera_x) * zoom_level
+        screen_y = HEIGHT/2 + (hex_y - camera_y) * zoom_level
+
+        # Создание полупрозрачной поверхности
+        size = BASE_HEX_SIZE * zoom_level
+        surface = pygame.Surface((size * 2, size * 2), pygame.SRCALPHA)
+        color = HEX_COLORS.get(hex_type, (50, 50, 150))
+        translucent_color = (*color, 80)  # Прозрачность 80/255
+
+        center = (size, size)
+        points = [(
+            center[0] + size * math.cos(math.pi / 180 * (60 * i - 30)),
+            center[1] + size * math.sin(math.pi / 180 * (60 * i - 30))
+        ) for i in range(6)]
+
+        pygame.draw.polygon(surface, translucent_color, points)
+        screen.blit(surface, (screen_x - size, screen_y - size))
 
     # Рисуем ресурсы
     for food in game_state.get('food', []):
@@ -478,6 +504,9 @@ def main():
                     load_game_state_from_file()
                 elif event.key == pygame.K_SPACE:
                     center_on_home()
+                elif event.key == pygame.K_n:
+                    discovered_hexes.clear()
+                    print("Обнаруженные клетки сброшены.")
 
         # Клавиши
         keys = pygame.key.get_pressed()
@@ -523,7 +552,8 @@ def main():
                 f"Юниты: {stats['my_ants']}",
                 f"Противники: {stats['enemies']}",
                 f"Еда: {stats['food']}",
-                f"Видимые клетки: {stats['cells']}"
+                f"Видимые клетки: {stats['cells']}",
+                f"Изученные клетки: {len(discovered_hexes)}"
             ]
             for i, line in enumerate(info_lines):
                 info_text = font.render(line, True, TEXT_COLOR)
