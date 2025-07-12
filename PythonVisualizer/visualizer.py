@@ -20,16 +20,9 @@ pygame.display.set_caption("Ant Arena Visualizer")
 WS_URL = "ws://37.48.249.190:8080/echo"
 PING_INTERVAL = 10  # seconds
 
-# Глобальные переменные для WebSocket
-ws = None
-ping_thread = None
-running = True
-game_state = None
-connection_failed = False
-
 # Цвета
 BACKGROUND = (0, 0, 0)
-HEX_LINE_COLOR = (100, 100, 255)
+HEX_LINE_COLOR = (0, 0, 0)
 TEXT_COLOR = (255, 255, 255)
 COORD_TEXT_COLOR = (255, 255, 0)  # Желтый цвет для координат
 
@@ -87,9 +80,21 @@ FOOD_COLORS = {
     FOOD_NECTAR: (255, 215, 0)
 }
 
+# Глобальные переменные для WebSocket
+ws = None
+ping_thread = None
+ws_thread = None
+running = True
+game_state = None
+connection_failed = False
+last_reconnect_time = 0
+RECONNECT_COOLDOWN = 2  # seconds
+
 # WebSocket функции
 def on_open(ws):
+    global connection_failed
     print("[WebSocket] Connected")
+    connection_failed = False
     ws.send("subscribe")
 
 def on_message(ws, message):
@@ -114,13 +119,14 @@ def on_error(ws, error):
 
 def send_pings():
     while running:
-        print("[WebSocket] Sending Ping")
         try:
-            if ws.sock and ws.sock.connected:
+            if ws and hasattr(ws, 'sock') and ws.sock and ws.sock.connected:
+                print("[WebSocket] Sending Ping")
                 ws.sock.ping()
+            else:
+                print("[WebSocket] Skip ping - not connected")
         except Exception as e:
             print(f"[WebSocket] Ping failed: {e}")
-            break
         time.sleep(PING_INTERVAL)
 
 def graceful_exit(signum, frame):
@@ -128,15 +134,41 @@ def graceful_exit(signum, frame):
     print("\n[WebSocket] Exiting...")
     running = False
     if ws:
-        ws.send("unsubscribe")
-        time.sleep(0.5)
-        ws.close()
+        try:
+            ws.send("unsubscribe")
+            time.sleep(0.5)
+            ws.close()
+        except:
+            pass
     pygame.quit()
     sys.exit(0)
 
+def cleanup_websocket():
+    global ws, ping_thread, ws_thread
+    if ws:
+        try:
+            ws.close()
+        except:
+            pass
+    if ping_thread and ping_thread.is_alive():
+        ping_thread.join(timeout=0.5)
+    if ws_thread and ws_thread.is_alive():
+        ws_thread.join(timeout=0.5)
+
 def connect_websocket():
-    global ws, ping_thread
+    global ws, ping_thread, ws_thread, last_reconnect_time
+    
+    current_time = time.time()
+    if current_time - last_reconnect_time < RECONNECT_COOLDOWN:
+        print(f"[WebSocket] Reconnect cooldown - wait {RECONNECT_COOLDOWN} seconds")
+        return ws
+    
+    last_reconnect_time = current_time
+    
     print("[WebSocket] Connecting...")
+    
+    # Cleanup previous connection
+    cleanup_websocket()
     
     ws = websocket.WebSocketApp(
         WS_URL,
@@ -310,13 +342,45 @@ def draw_game_state():
         "cells": visible_cells
     }
 
+def load_game_state_from_file():
+    global game_state, camera_x, camera_y
+    try:
+        with open('sample.json', 'r') as f:
+            game_state = json.load(f)
+            print("Состояние игры успешно загружено из файла sample.json")
+            
+            # Автоматически центрируем на доме после загрузки
+            center_on_home()
+    except Exception as e:
+        print(f"Ошибка при загрузке состояния игры: {e}")
+
+def center_on_home():
+    global camera_x, camera_y, zoom_level
+    if not game_state or not game_state.get('home'):
+        return
+    
+    # Берем первый муравейник (можно добавить логику для выбора своего муравейника)
+    home = game_state['home'][0]
+    q, r = home['q'], home['r']
+    
+    hex_x = q * BASE_HEX_WIDTH
+    if r % 2 == 1:
+        hex_x += BASE_HEX_WIDTH / 2
+    hex_y = r * BASE_HEX_VERTICAL_SPACING
+    
+    camera_x = hex_x
+    camera_y = hex_y
+    zoom_level = 1.0  # Сбрасываем зум при центрировании
+
 def main():
-    global camera_x, camera_y, zoom_level, dragging, last_mouse_pos, ws, running
+    global camera_x, camera_y, zoom_level, dragging, last_mouse_pos, ws, running, connection_failed
 
     signal.signal(signal.SIGINT, graceful_exit)
     connect_websocket()
 
     clock = pygame.time.Clock()
+
+    r_was_pressed = False
 
     while running:
         screen.fill(BACKGROUND)
@@ -352,6 +416,11 @@ def main():
                 camera_x -= dx
                 camera_y -= dy
                 last_mouse_pos = event.pos
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_s:
+                    load_game_state_from_file()
+                elif event.key == pygame.K_SPACE:
+                    center_on_home()
 
         # Клавиши
         keys = pygame.key.get_pressed()
@@ -363,41 +432,58 @@ def main():
             camera_y -= 10 / zoom_level
         if keys[pygame.K_DOWN]:
             camera_y += 10 / zoom_level
-        if keys[pygame.K_r]:  # Переподключение
-            if ws:
-                ws.close()
-            connect_websocket()
-            print("Попытка переподключения...")
+        if keys[pygame.K_r]:
+            if not r_was_pressed:
+                if ws:
+                    ws.close()
+                connect_websocket()
+                print("Попытка переподключения...")
+                connection_failed = False
+                r_was_pressed = True
+        else:
+            r_was_pressed = False
 
-        # Отрисовка
+        # Отрисовка состояния подключения
+        if connection_failed:
+            conn_status = "ОТКЛЮЧЕНО ('R' - повторить попытку)"
+            conn_color = (255, 0, 0)
+        elif ws and ws.sock and ws.sock.connected:
+            conn_status = "ПОДКЛЮЧЕНО"
+            conn_color = (0, 255, 0)
+        else:
+            conn_status = "ПОДКЛЮЧЕНИЕ..."
+            conn_color = (255, 165, 0)
+
+        conn_text = font.render(f"Сервер: {conn_status}", True, conn_color)
+        screen.blit(conn_text, (10, 10))
+
+        # Отрисовка состояния игры
         if game_state:
             stats = draw_game_state()
             info_lines = [
-                f"Turn: {stats['turn']}",
-                f"Points: {stats['points']}",
-                f"My ants: {stats['my_ants']}",
-                f"Enemies: {stats['enemies']}",
-                f"Food: {stats['food']}",
-                f"Visible cells: {stats['cells']}"
+                f"Ход: {stats['turn']}",
+                f"Очки: {stats['points']}",
+                f"Юниты: {stats['my_ants']}",
+                f"Противники: {stats['enemies']}",
+                f"Еда: {stats['food']}",
+                f"Видимые клетки: {stats['cells']}"
             ]
             for i, line in enumerate(info_lines):
                 info_text = font.render(line, True, TEXT_COLOR)
                 screen.blit(info_text, (10, 80 + i * 20))
         else:
-            no_conn_text = font.render("Нет соединения с сервером. Нажмите 'R' для переподключения.", True, (255, 0, 0))
-            screen.blit(no_conn_text, (WIDTH // 2 - no_conn_text.get_width() // 2, HEIGHT // 2))
+            no_state_text = font.render("Нет данных о состоянии игры ('S' - загрузить данные из sample.json)", True, (255, 255, 0))
+            screen.blit(no_state_text, (10, 40))
 
+        # Отображение координат
         mouse_pos = pygame.mouse.get_pos()
         hex_coords = screen_to_hex(mouse_pos)
         coord_text = font.render(f"Hex: {hex_coords[0]}, {hex_coords[1]}", True, COORD_TEXT_COLOR)
         screen.blit(coord_text, (mouse_pos[0] + 10, mouse_pos[1] + 10))
 
-        if game_state:
-            turn_text = font.render(f"Turn: {game_state.get('turnNo', 0)}", True, TEXT_COLOR)
-            screen.blit(turn_text, (10, 10))
-
-        camera_text = font.render(f"Camera: ({camera_x:.1f}, {camera_y:.1f}) Zoom: {zoom_level:.2f}x", True, TEXT_COLOR)
-        screen.blit(camera_text, (10, 40))
+        # Отображение параметров камеры
+        camera_text = font.render(f"Камера: ({camera_x:.1f}, {camera_y:.1f}) Масштаб: {zoom_level:.2f}x", True, TEXT_COLOR)
+        screen.blit(camera_text, (10, HEIGHT - 30))
 
         pygame.display.flip()
         clock.tick(60)
