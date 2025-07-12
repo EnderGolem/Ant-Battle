@@ -4,6 +4,16 @@ namespace Server.Net.Models;
 
 public class Coordinate
 {
+    public Coordinate()
+    {
+    }
+
+    public Coordinate(int q, int r)
+    {
+        Q = q;
+        R = r;
+    }
+
     [JsonProperty("q")]
     public int Q { get; set; }
 

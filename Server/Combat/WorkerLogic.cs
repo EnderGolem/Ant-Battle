@@ -108,7 +108,7 @@ public class WorkerLogic
             // Проверяем, не занята ли уже эта еда другим рабочим
             bool isTargeted = _workerTargets.Values.Contains(foodPos);
             
-            if (distance < minDistance && !isTargeted)
+            if (distance < minDistance && !isTargeted && food.Type != FoodType.Nectar)
             {
                 minDistance = distance;
                 nearestFood = food;
@@ -129,7 +129,7 @@ public class WorkerLogic
         foreach (var worker in _combat.Workers)
         {
             var ant = worker.Value;
-            var currentPos = new HexCellHash(ant.Q, ant.R);
+            var currentPos = HexCellHash.FromCoordinate(new Coordinate(ant.Q, ant.R));
             var state = _workerStates[worker.Key];
 
             // Если рабочий собирает еду, он должен стоять на месте
@@ -149,7 +149,7 @@ public class WorkerLogic
             if (_workerTargets.ContainsKey(worker.Key))
             {
                 var targetPos = _workerTargets[worker.Key];
-                    var calculatedPath = _pathfinder.Pathfind(_combat.MemorizedFields.Field, _combat.CellsOccupiedByAnts, ant.Type, currentPos, targetPos);
+                var calculatedPath = _pathfinder.Pathfind(_combat.MemorizedFields.Field, _combat.CellsOccupiedByAnts, ant.Type, currentPos, targetPos);
 
                 if (calculatedPath != null && calculatedPath.Count > 1)
                 {
