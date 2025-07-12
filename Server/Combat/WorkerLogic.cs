@@ -1,4 +1,6 @@
-﻿using Server.Net.Models;
+using Server.Net.Models;
+using System.Collections.Concurrent;
+using System.Threading.Tasks;
 
 namespace Server.Combat;
 
@@ -140,32 +142,34 @@ public class WorkerLogic
 
     public List<Move> GetWorkerMoves()
     {
-        List<Move> moves = new List<Move>();
+        ConcurrentBag<Move> moves = new ConcurrentBag<Move>();
 
-        foreach (var worker in _combat.Workers)
+        Parallel.ForEach(_combat.Workers, worker =>
         {
             var ant = worker.Value;
             var currentPos = HexCellHash.FromCoordinate(new Coordinate(ant.Q, ant.R));
             var state = _workerStates[worker.Key];
 
-            // Если рабочий собирает еду, он должен стоять на месте
             if (state == WorkerState.CollectingFood)
             {
-                // Создаем пустой ход (стоим на месте)
-                Move move = new Move
+                moves.Add(new Move
                 {
                     Ant = ant.Id,
                     Path = new List<Coordinate>()
-                };
-                moves.Add(move);
-                continue;
+                });
+                return;
             }
 
-            // Если есть цель, строим путь к ней
             if (_workerTargets.ContainsKey(worker.Key))
             {
                 var targetPos = _workerTargets[worker.Key];
-                var calculatedPath = _pathfinder.Pathfind(_combat.MemorizedFields.Field, _combat.CellsOccupiedByAnts, ant.Type, currentPos, targetPos);
+                var localPathfinder = new AstarPathfinder(10000);
+                var calculatedPath = localPathfinder.Pathfind(
+                    _combat.MemorizedFields.Field,
+                    _combat.CellsOccupiedByAnts,
+                    ant.Type,
+                    currentPos,
+                    targetPos);
 
                 if (calculatedPath != null && calculatedPath.Count > 1)
                 {
@@ -184,9 +188,9 @@ public class WorkerLogic
                     moves.Add(move);
                 }
             }
-        }
+        });
 
-        return moves;
+        return moves.ToList();
     }
 }
 
