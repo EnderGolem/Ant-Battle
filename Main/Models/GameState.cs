@@ -6,19 +6,19 @@ namespace Server.Net.Models;
 public class GameState : Base
 {
     [JsonProperty("ants")]
-    public IList<Ant> Ants { get; set; } = new List<Ant>();
+    public List<Ant> Ants { get; set; } = new List<Ant>();
 
     [JsonProperty("enemies")]
-    public IList<Enemy> Enemies { get; set; } = new List<Enemy>();
+    public List<Enemy> Enemies { get; set; } = new List<Enemy>();
 
     [JsonProperty("food")]
-    public IList<FoodOnMap> Food { get; set; } = new List<FoodOnMap>();
+    public List<FoodOnMap> Food { get; set; } = new List<FoodOnMap>();
 
     [JsonProperty("home")]
-    public IList<Coordinate> Home { get; set; } = new List<Coordinate>();
+    public List<Coordinate> Home { get; set; } = new List<Coordinate>();
 
     [JsonProperty("map")]
-    public IList<MapTile> Map { get; set; } = new List<MapTile>();
+    public List<MapTile> Map { get; set; } = new List<MapTile>();
 
     [JsonProperty("nextTurnIn")]
     public decimal NextTurnIn { get; set; }
