@@ -184,5 +184,56 @@ public class Combat
             _combatField.SetHexCell(hash, hexCell);
         }
     }
+
+    /// <summary>
+    /// Принудительно перемещает всех ботов на 2 шага в указанном направлении
+    /// </summary>
+    /// <param name="moveRight">true для движения вправо, false для движения влево</param>
+    /// <returns>MovesRequest с принудительными перемещениями</returns>
+    public MovesRequest ForceMoveBots(bool moveRight)
+    {
+        var moves = new List<Move>();
+        var allAnts = new Dictionary<string, Ant>();
+        
+        // Собираем всех муравьев
+        foreach (var scout in _scouts)
+            allAnts[scout.Key] = scout.Value;
+        foreach (var worker in _workers)
+            allAnts[worker.Key] = worker.Value;
+        foreach (var unassigned in _unassignedAnts)
+            allAnts[unassigned.Key] = unassigned.Value;
+
+        foreach (var ant in allAnts)
+        {
+            var currentPos = new Coordinate() { Q = ant.Value.Q, R = ant.Value.R };
+            var path = new List<Coordinate>();
+
+            // Создаем путь из 2 шагов
+            for (int i = 0; i < 2; i++)
+            {
+                if (moveRight)
+                {
+                    // Движение вправо в гексагональной сетке
+                    currentPos = new Coordinate() { Q = currentPos.Q + 1, R = currentPos.R };
+                }
+                else
+                {
+                    // Движение влево в гексагональной сетке
+                    currentPos = new Coordinate() { Q = currentPos.Q - 1, R = currentPos.R };
+                }
+                path.Add(new Coordinate() { Q = currentPos.Q, R = currentPos.R });
+            }
+
+            moves.Add(new Move()
+            {
+                Ant = ant.Value.Id,
+                Path = path
+            });
+        }
+
+        Console.WriteLine($"Принудительное перемещение {moves.Count} ботов {(moveRight ? "вправо" : "влево")}");
+        
+        return new MovesRequest() { Moves = moves };
+    }
 }
 
