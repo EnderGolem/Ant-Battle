@@ -40,8 +40,8 @@ public static class Encyclopedia
         switch (type)
         {
             case HexType.Base:
-                cost = 255;
-                passable = false;
+                cost = 1;
+                passable = true;
                 break;
             case HexType.Default:
                 cost = 1;

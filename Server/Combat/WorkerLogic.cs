@@ -149,7 +149,7 @@ public class WorkerLogic
             if (_workerTargets.ContainsKey(worker.Key))
             {
                 var targetPos = _workerTargets[worker.Key];
-                var calculatedPath = _pathfinder.Pathfind(_combat.MemorizedFields.Field, currentPos, targetPos);
+                    var calculatedPath = _pathfinder.Pathfind(_combat.MemorizedFields.Field, _combat.CellsOccupiedByAnts, ant.Type, currentPos, targetPos);
 
                 if (calculatedPath != null && calculatedPath.Count > 1)
                 {
